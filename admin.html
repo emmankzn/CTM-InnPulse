@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InnPulse — Admin Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --charcoal: #12161A;
+            --dark-sec: #1C2228;
+            --off-white: #F8F9FA;
+            --warm-cream: #FAFAF8;
+            --gold: #D4AF37;
+            --muted-gold: #B9982E;
+            --border: #E5E7EB;
+            --muted: #8B9198
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--off-white);
+            color: var(--charcoal);
+            display: flex;
+            min-height: 100vh
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Playfair Display', serif
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 240px;
+            min-height: 100vh;
+            background: var(--charcoal);
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            flex-shrink: 0;
+            transition: width 250ms;
+        }
+
+        .sidebar-logo {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06)
+        }
+
+        .sidebar-logo-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--gold);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 10px
+        }
+
+        .sidebar-logo-name {
+            font-family: 'Playfair Display', serif;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600
+        }
+
+        .sidebar-logo-role {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-top: 2px
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px
+        }
+
+        .nav-section-label {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.28);
+            padding: 8px 12px 4px;
+            margin-top: 8px
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 180ms;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff
+        }
+
+        .nav-item.active {
+            background: rgba(212, 175, 55, 0.14);
+            color: var(--gold);
+            border-left: 2px solid var(--gold)
+        }
+
+        .nav-icon {
+            font-size: 15px;
+            width: 20px;
+            text-align: center
+        }
+
+        .sidebar-footer {
+            padding: 16px 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06)
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px
+        }
+
+        .sidebar-avatar {
+            width: 34px;
+            height: 34px;
+            background: rgba(212, 175, 55, 0.18);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px
+        }
+
+        .sidebar-username {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff
+        }
+
+        .sidebar-userrole {
+            font-size: 10px;
+            color: var(--muted)
+        }
+
+        .btn-signout-side {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 180ms;
+            font-family: 'Inter', sans-serif
+        }
+
+        .btn-signout-side:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff
+        }
+
+        /* ── MAIN ── */
+        .main {
+            flex: 1;
+            overflow: auto
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 28px;
+            border-bottom: 1px solid var(--border);
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 40
+        }
+
+        .top-bar-title p {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 2px
+        }
+
+        .top-bar-title h1 {
+            font-size: 22px;
+            font-weight: 600
+        }
+
+        .content {
+            padding: 28px
+        }
+
+        /* TABLE */
+        .card {
+            background: #fff;
+            border-radius: 13px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05)
+        }
+
+        .card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .card-title {
+            font-size: 17px;
+            font-weight: 600
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        th {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: var(--muted);
+            padding: 11px 16px;
+            background: var(--off-white);
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            white-space: nowrap
+        }
+
+        td {
+            padding: 13px 16px;
+            border-bottom: 1px solid #F3F4F6;
+            font-size: 13px;
+            vertical-align: middle
+        }
+
+        tr:last-child td {
+            border-bottom: none
+        }
+
+        tr:hover td {
+            background: #FAFAF8
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--muted)
+        }
+
+        /* BADGES */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 9px;
+            border-radius: 100px;
+            font-size: 11px;
+            font-weight: 700
+        }
+
+        .badge-admin {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--muted-gold)
+        }
+
+        .badge-staff {
+            background: #dbeafe;
+            color: #1d4ed8
+        }
+
+        .badge-active {
+            background: #d1fae5;
+            color: #065f46
+        }
+
+        .badge-locked {
+            background: #fee2e2;
+            color: #dc2626
+        }
+
+        /* BUTTONS */
+        .btn-primary {
+            background: var(--charcoal);
+            color: #fff;
+            border: none;
+            padding: 9px 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 180ms;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px
+        }
+
+        .btn-primary:hover {
+            background: #1C2228;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2)
+        }
+
+        .btn-sm {
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            border: none;
+            transition: all 150ms
+        }
+
+        .btn-edit {
+            background: #f3f4f6;
+            color: #374151;
+            border: 1px solid var(--border)
+        }
+
+        .btn-edit:hover {
+            background: var(--charcoal);
+            color: #fff;
+            border-color: var(--charcoal)
+        }
+
+        .btn-lock {
+            background: #fffbeb;
+            color: #d97706;
+            border: 1px solid #fde68a
+        }
+
+        .btn-lock:hover {
+            background: #d97706;
+            color: #fff;
+            border-color: #d97706
+        }
+
+        .btn-unlock {
+            background: #d1fae5;
+            color: #065f46;
+            border: 1px solid #bbf7d0
+        }
+
+        .btn-unlock:hover {
+            background: #065f46;
+            color: #fff
+        }
+
+        .btn-reset {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe
+        }
+
+        .btn-reset:hover {
+            background: #1d4ed8;
+            color: #fff
+        }
+
+        .btn-danger {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            color: #fff
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(3px);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px
+        }
+
+        .modal-overlay.open {
+            display: flex
+        }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+            width: 100%;
+            max-width: 520px;
+            max-height: 92vh;
+            overflow-y: auto;
+            animation: modalIn 0.2s ease
+        }
+
+        @keyframes modalIn {
+            from {
+                transform: scale(0.94) translateY(20px);
+                opacity: 0
+            }
+
+            to {
+                transform: scale(1) translateY(0);
+                opacity: 1
+            }
+        }
+
+        .modal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border)
+        }
+
+        .modal-title {
+            font-size: 19px;
+            font-weight: 600
+        }
+
+        .modal-close {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--off-white);
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 150ms
+        }
+
+        .modal-close:hover {
+            background: var(--border)
+        }
+
+        .modal-body {
+            padding: 24px
+        }
+
+        .form-group {
+            margin-bottom: 14px
+        }
+
+        .form-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 9px 13px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            color: var(--charcoal);
+            background: #fff;
+            outline: none;
+            transition: border-color 180ms, box-shadow 180ms
+        }
+
+        .form-input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1)
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: var(--charcoal);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 180ms;
+            margin-top: 6px
+        }
+
+        .btn-submit:hover {
+            background: var(--gold);
+            color: var(--charcoal)
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            min-width: 280px;
+            padding: 13px 18px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+            animation: slideIn 0.25s ease
+        }
+
+        .toast-success {
+            background: #1a2e1a;
+            color: #6fcf6f;
+            border: 1px solid #2d5a2d
+        }
+
+        .toast-error {
+            background: #2e1a1a;
+            color: #cf6f6f;
+            border: 1px solid #5a2d2d
+        }
+
+        .toast-info {
+            background: #1a1e2e;
+            color: #6f9fcf;
+            border: 1px solid #2d3d5a
+        }
+
+        .toast-warning {
+            background: #2e2a1a;
+            color: var(--gold);
+            border: 1px solid #5a4d2d
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(120%);
+                opacity: 0
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .spin {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite
+        }
+
+        /* SIDEBAR MOBILE TOGGLE */
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 300;
+            background: var(--charcoal);
+            border: none;
+            border-radius: 8px;
+            width: 38px;
+            height: 38px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #fff;
+            font-size: 18px
+        }
+
+        @media(max-width:900px) {
+            .sidebar {
+                position: fixed;
+                left: -240px;
+                z-index: 200;
+                transition: left 250ms
+            }
+
+            .sidebar.open {
+                left: 0
+            }
+
+            .sidebar-toggle {
+                display: flex
+            }
+
+            .main {
+                margin-left: 0
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- SIDEBAR TOGGLE (mobile) -->
+    <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+    <!-- ══════════════════════════ SIDEBAR ═══════════════════════════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">🏨</div>
+            <p class="sidebar-logo-name">InnPulse</p>
+            <p class="sidebar-logo-role">Administrator</p>
+        </div>
+
+        <nav class="sidebar-nav">
+            <p class="nav-section-label">Controls</p>
+            <a class="nav-item active" href="admin.html">
+                <span class="nav-icon">👥</span> User Management
+            </a>
+            <a class="nav-item" href="audit-logs.html">
+                <span class="nav-icon">🔍</span> Security Audit
+            </a>
+            <a class="nav-item" href="system-config.html">
+                <span class="nav-icon">⚙</span> System Config
+            </a>
+            <a class="nav-item" href="front-desk.html">
+                <span class="nav-icon">🖥</span> Front Desk
+            </a>
+
+            <p class="nav-section-label">Database</p>
+            <a class="nav-item" href="schema.html">
+                <span class="nav-icon">🗄</span> Schema Viewer
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">👤</div>
+                <div>
+                    <p class="sidebar-username" id="sidebar-username">Loading…</p>
+                    <p class="sidebar-userrole">Super Admin</p>
+                </div>
+            </div>
+            <button class="btn-signout-side" onclick="signOut()">Sign Out</button>
+        </div>
+    </aside>
+
+    <!-- ══════════════════════════ MAIN ══════════════════════════════ -->
+    <div class="main">
+        <div class="top-bar">
+            <div class="top-bar-title">
+                <p>Role-Based Access Control</p>
+                <h1>User Management</h1>
+            </div>
+            <button class="btn-primary" onclick="openInviteModal()">
+                <span>+</span> Invite User
+            </button>
+        </div>
+
+        <div class="content">
+            <div class="card">
+                <div class="card-head">
+                    <h2 class="card-title">Staff &amp; Administrators</h2>
+                    <div style="display:flex;align-items:center;gap:10px">
+                        <input type="text" placeholder="Search users…" id="user-search" oninput="filterUsers()"
+                            style="padding:7px 12px;border:1px solid var(--border);border-radius:7px;font-size:13px;outline:none;width:200px" />
+                    </div>
+                </div>
+                <div style="overflow-x:auto">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Last Login</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody">
+                            <tr>
+                                <td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">Loading users…
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════ INVITE / EDIT USER MODAL ══════ -->
+    <div class="modal-overlay" id="user-modal">
+        <div class="modal-box">
+            <div class="modal-head">
+                <h3 class="modal-title" id="user-modal-title">Invite User</h3>
+                <button class="modal-close" onclick="closeUserModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="user-form" onsubmit="saveUser(event)">
+                    <input type="hidden" id="uf-id" />
+                    <div class="form-group">
+                        <label class="form-label">Username *</label>
+                        <input type="text" class="form-input" id="uf-username" placeholder="john.doe" required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Email *</label>
+                        <input type="email" class="form-input" id="uf-email" placeholder="staff@innpulse.demo"
+                            required />
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Role *</label>
+                        <select class="form-input" id="uf-role" required>
+                            <option value="staff">Staff</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="password-group">
+                        <label class="form-label">Initial Password *</label>
+                        <input type="password" class="form-input" id="uf-password" placeholder="Min 6 characters" />
+                        <p style="font-size:11px;color:var(--muted);margin-top:4px">User should change this password
+                            after first login.</p>
+                    </div>
+                    <button type="submit" class="btn-submit" id="user-submit-btn">Create User</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        const SUPABASE_URL = 'https://zkoygowrxpkycfnmkmjm.supabase.co';
+        const SUPABASE_ANON = 'sb_publishable_nDXU4D-y6IuCQRjc9JafqQ_IFWMs5Q-';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+        let currentUser = null;
+        let currentProfile = null;
+        let allUsers = [];
+
+        // ── Auth gate ─────────────────────────────────────────────────────────────────
+        async function init() {
+            const stored = localStorage.getItem('innpulse_user');
+            if (!stored) { window.location.href = 'index.html?login=1'; return; }
+            const sessionUser = JSON.parse(stored);
+            if (sessionUser.role !== 'admin') { showAccessDenied(); setTimeout(() => window.location.href = 'front-desk.html', 2000); return; }
+            currentUser = { id: sessionUser.email, email: sessionUser.email };
+            currentProfile = sessionUser;
+            document.getElementById('sidebar-username').textContent = sessionUser.username || sessionUser.email;
+            await loadUsers();
+            logAudit('Admin portal accessed', 'INFO');
+        }
+
+        // ── Load users ────────────────────────────────────────────────────────────────
+        async function loadUsers() {
+            const { data, error } = await supabase.from('profiles').select('*').order('created_at');
+            if (error || !data) { allUsers = getFallbackUsers(); }
+            else { allUsers = data; }
+            renderUsers(allUsers);
+        }
+
+        function renderUsers(users) {
+            const tbody = document.getElementById('users-tbody');
+            if (!users.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--muted)">No users found.</td></tr>'; return;
+            }
+            tbody.innerHTML = users.map(u => {
+                const roleBadge = u.role === 'admin'
+                    ? '<span class="badge badge-admin">Admin</span>'
+                    : '<span class="badge badge-staff">Staff</span>';
+                const statusBadge = u.locked
+                    ? '<span class="badge badge-locked">Locked</span>'
+                    : '<span class="badge badge-active">Active</span>';
+                const lastLogin = u.last_login
+                    ? new Date(u.last_login).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : 'Never';
+                const isSelf = currentUser && u.id === currentUser.id;
+
+                return `<tr>
+      <td class="mono" style="max-width:100px;overflow:hidden;text-overflow:ellipsis" title="${u.id}">${(u.id || '').slice(0, 12)}…</td>
+      <td style="font-weight:600">${u.username || '—'}</td>
+      <td style="color:var(--muted);font-size:12px">${u.email || '—'}</td>
+      <td>${roleBadge}</td>
+      <td>${statusBadge}</td>
+      <td style="font-size:12px;color:var(--muted)">${lastLogin}</td>
+      <td>
+        <div style="display:flex;gap:5px;flex-wrap:wrap">
+          <button class="btn-sm btn-edit" onclick="openEditUserModal('${u.id}')">Edit</button>
+          <button class="btn-sm btn-reset" onclick="resetPassword('${u.id}','${u.email}')">Reset PW</button>
+          ${u.locked
+                        ? `<button class="btn-sm btn-unlock" onclick="toggleLock('${u.id}',false)">Unlock</button>`
+                        : `<button class="btn-sm btn-lock" onclick="toggleLock('${u.id}',true)" ${isSelf ? 'disabled title="Cannot lock yourself"' : ''}>Lock</button>`}
+          ${!isSelf ? `<button class="btn-sm btn-danger" onclick="removeUser('${u.id}','${u.username || u.email}')">Remove</button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+            }).join('');
+        }
+
+        // ── Filter ────────────────────────────────────────────────────────────────────
+        window.filterUsers = function () {
+            const q = document.getElementById('user-search').value.toLowerCase();
+            if (!q) { renderUsers(allUsers); return; }
+            renderUsers(allUsers.filter(u =>
+                (u.username || '').toLowerCase().includes(q) ||
+                (u.email || '').toLowerCase().includes(q) ||
+                (u.role || '').toLowerCase().includes(q)
+            ));
+        };
+
+        // ── Invite modal ──────────────────────────────────────────────────────────────
+        window.openInviteModal = function () {
+            document.getElementById('user-modal-title').textContent = 'Invite User';
+            document.getElementById('uf-id').value = '';
+            document.getElementById('user-form').reset();
+            document.getElementById('password-group').style.display = 'block';
+            document.getElementById('user-submit-btn').textContent = 'Create User';
+            document.getElementById('user-modal').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.openEditUserModal = function (id) {
+            const user = allUsers.find(u => String(u.id) === String(id));
+            if (!user) return;
+            document.getElementById('user-modal-title').textContent = 'Edit User';
+            document.getElementById('uf-id').value = user.id;
+            document.getElementById('uf-username').value = user.username || '';
+            document.getElementById('uf-email').value = user.email || '';
+            document.getElementById('uf-role').value = user.role || 'staff';
+            document.getElementById('password-group').style.display = 'none';
+            document.getElementById('user-submit-btn').textContent = 'Save Changes';
+            document.getElementById('user-modal').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        };
+
+        window.closeUserModal = function () {
+            document.getElementById('user-modal').classList.remove('open');
+            document.body.style.overflow = '';
+        };
+
+        document.getElementById('user-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeUserModal(); });
+
+        // ── Save user ─────────────────────────────────────────────────────────────────
+        window.saveUser = async function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('user-submit-btn');
+            btn.disabled = true; btn.innerHTML = '<span class="spin"></span>';
+
+            const id = document.getElementById('uf-id').value;
+            const username = document.getElementById('uf-username').value.trim();
+            const email = document.getElementById('uf-email').value.trim();
+            const role = document.getElementById('uf-role').value;
+            const password = document.getElementById('uf-password')?.value;
+
+            if (id) {
+                // Update profile only
+                const { error } = await supabase.from('profiles').update({ username, email, role }).eq('id', id);
+                if (error) { showToast('Failed to update user.', 'error'); }
+                else { showToast('User updated successfully.', 'success'); closeUserModal(); await loadUsers(); logAudit(`User role changed: ${username} → ${role}`, 'WARN'); }
+            } else {
+                // NOTE: Creating auth users requires admin API (service role key) — not safe on frontend.
+                // Show clear step-by-step instructions for the admin.
+                if (!password || password.length < 6) { showToast('Password must be at least 6 characters.', 'warning'); btn.disabled = false; btn.textContent = 'Create User'; return; }
+
+                const infoDiv = document.createElement('div');
+                infoDiv.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px';
+                infoDiv.innerHTML = `<div style="background:#fff;border-radius:16px;padding:32px;max-width:480px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.3)">
+                  <h3 style="font-family:'Playfair Display',serif;font-size:20px;margin-bottom:8px">Create Staff Account</h3>
+                  <p style="font-size:14px;color:#8B9198;margin-bottom:18px">Go to your <strong style="color:#12161A">Supabase Dashboard → Authentication → Users → Add User</strong> and enter:</p>
+                  <div style="background:#F8F9FA;border-radius:9px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:13px;margin-bottom:16px;border:1px solid #E5E7EB">
+                    <p style="margin-bottom:6px">Email: <strong style="color:#12161A">${email}</strong></p>
+                    <p>Password: <strong style="color:#D4AF37">${password}</strong></p>
+                  </div>
+                  <p style="font-size:12px;color:#8B9198;margin-bottom:20px">Then run in Supabase SQL Editor to assign the role:<br>
+                  <code style="background:#F8F9FA;padding:8px 10px;border-radius:6px;display:block;margin-top:8px;font-size:12px;color:#12161A;border:1px solid #E5E7EB">UPDATE profiles SET role='${role}', username='${username}' WHERE email='${email}';</code></p>
+                  <button onclick="this.closest('div').parentElement.remove()" style="width:100%;padding:11px;background:#12161A;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer">Got it</button>
+                </div>`;
+                document.body.appendChild(infoDiv);
+                closeUserModal();
+                logAudit(`Invite initiated for: ${email} (${role})`, 'INFO');
+            }
+            btn.disabled = false; btn.textContent = id ? 'Save Changes' : 'Create User';
+        };
+
+        // ── Lock / Unlock ─────────────────────────────────────────────────────────────
+        window.toggleLock = async function (id, lock) {
+            if (id === currentUser.id) { showToast('You cannot lock your own account.', 'warning'); return; }
+            const { error } = await supabase.from('profiles').update({ locked: lock }).eq('id', id);
+            if (error) { showToast('Failed to update lock status.', 'error'); return; }
+            const action = lock ? 'locked' : 'unlocked';
+            showToast(`Account ${action}.`, lock ? 'warning' : 'success');
+            await loadUsers();
+            logAudit(`Account manually ${action}: ${id}`, lock ? 'WARN' : 'INFO');
+        };
+
+        // ── Reset password ────────────────────────────────────────────────────────────
+        window.resetPassword = async function (id, email) {
+            if (!email) { showToast('No email on record.', 'warning'); return; }
+            // In a real app this would trigger supabase.auth.resetPasswordForEmail
+            // For demo, we just show feedback.
+            showToast(`Password reset instructions would be sent to ${email}. (Demo — no email sent.)`, 'info', 6000);
+            logAudit(`Password reset triggered for: ${email}`, 'WARN');
+        };
+
+        // ── Remove user ───────────────────────────────────────────────────────────────
+        window.removeUser = async function (id, label) {
+            if (id === currentUser?.id) { showToast('Cannot remove your own account.', 'warning'); return; }
+            const ok = await showConfirm(`Remove "${label}" from the system?`);
+            if (!ok) return;
+            const { error } = await supabase.from('profiles').delete().eq('id', id);
+            if (error) { showToast('Failed to remove user.', 'error'); return; }
+            showToast('User removed.', 'info');
+            await loadUsers();
+            logAudit(`User removed: ${label}`, 'WARN');
+        };
+
+        // ── Sign out ──────────────────────────────────────────────────────────────────
+        window.signOut = function () {
+            localStorage.removeItem('innpulse_user');
+            window.location.href = 'index.html?login=1';
+        };
+
+        // ── Mobile sidebar ────────────────────────────────────────────────────────────
+        window.toggleSidebar = function () {
+            document.getElementById('sidebar').classList.toggle('open');
+        };
+
+        // ── Access denied ─────────────────────────────────────────────────────────────
+        function showAccessDenied() {
+            document.body.innerHTML = `<div style="position:fixed;inset:0;background:#12161A;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#F8F9FA;font-family:Inter,sans-serif">
+    <div style="font-size:48px;margin-bottom:16px">⛔</div>
+    <h2 style="font-family:'Playfair Display',serif;font-size:28px;margin-bottom:8px">Access Denied</h2>
+    <p style="color:#8B9198">Admin access required. Redirecting…</p></div>`;
+        }
+
+        // ── Fallback data ─────────────────────────────────────────────────────────────
+        function getFallbackUsers() {
+            return [
+                { id: 'a1', username: 'admin.root', email: 'admin@innpulse.demo', role: 'admin', locked: false, last_login: '2026-09-01T10:23:00Z', created_at: '2026-01-01T00:00:00Z' },
+                { id: 'a2', username: 'jane.staff', email: 'staff@innpulse.demo', role: 'staff', locked: false, last_login: '2026-09-01T08:15:00Z', created_at: '2026-01-15T00:00:00Z' },
+                { id: 'a3', username: 'tom.front', email: 'tom@innpulse.demo', role: 'staff', locked: true, last_login: '2026-08-28T14:05:00Z', created_at: '2026-02-01T00:00:00Z' },
+            ];
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────────────
+        async function logAudit(event, severity = 'INFO') {
+            await supabase.from('audit_logs').insert({
+                user_id: currentUser?.id, username: currentProfile?.username || currentUser?.email,
+                ip_address: '127.0.0.1', event, severity,
+                session_reference: `sess_demo_${Math.random().toString(36).slice(2, 8)}`,
+                metadata: {}
+            }).catch(() => { });
+        }
+
+        function showToast(msg, type = 'info', duration = 3500) {
+            const el = document.createElement('div');
+            const icons = { success: '✓', error: '✕', info: 'ℹ', warning: '⚠' };
+            el.className = `toast toast-${type}`;
+            el.innerHTML = `<span style="font-size:15px">${icons[type] || 'ℹ'}</span><span>${msg}</span>`;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(60px)'; el.style.transition = 'all 0.3s'; setTimeout(() => el.remove(), 300) }, duration);
+        }
+
+        function showConfirm(msg) {
+            return new Promise(resolve => {
+                const ov = document.createElement('div');
+                ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px';
+                ov.innerHTML = `<div style="background:#fff;border-radius:14px;max-width:400px;width:100%;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+      <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:8px">Confirm Action</h3>
+      <p style="font-size:14px;color:#8B9198;margin-bottom:22px">${msg}</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button id="c-no" style="padding:9px 18px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600">Cancel</button>
+        <button id="c-yes" style="padding:9px 18px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Confirm</button>
+      </div></div>`;
+                document.body.appendChild(ov);
+                ov.querySelector('#c-no').onclick = () => { ov.remove(); resolve(false) };
+                ov.querySelector('#c-yes').onclick = () => { ov.remove(); resolve(true) };
+                ov.onclick = e => { if (e.target === ov) { ov.remove(); resolve(false) } };
+            });
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

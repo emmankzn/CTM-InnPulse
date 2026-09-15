@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InnPulse — Database Schema</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --charcoal: #12161A;
+            --dark-sec: #1C2228;
+            --darker: #0D1117;
+            --off-white: #F8F9FA;
+            --gold: #D4AF37;
+            --muted-gold: #B9982E;
+            --border: #E5E7EB;
+            --muted: #8B9198;
+            --t1: #3b82f6;
+            --t2: #10b981;
+            --t3: #f59e0b;
+            --t4: #8b5cf6;
+            --t5: #06b6d4;
+            --t6: #ef4444;
+            --t7: #ec4899;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--darker);
+            color: #e1e4e8;
+            min-height: 100vh
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Playfair Display', serif
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2d3741;
+            border-radius: 3px
+        }
+
+        /* ── TOP BAR ── */
+        .top-bar {
+            background: #161b22;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .back-link {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.5);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+            transition: color 180ms
+        }
+
+        .back-link:hover {
+            color: var(--gold)
+        }
+
+        .center-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center
+        }
+
+        .center-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.3);
+            margin-bottom: 2px
+        }
+
+        .center-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff
+        }
+
+        .db-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .db-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.55)
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+            padding: 4px 10px;
+            border-radius: 100px
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 5px #10b981
+        }
+
+        .live-text {
+            font-size: 10px;
+            font-weight: 700;
+            color: #10b981;
+            text-transform: uppercase;
+            letter-spacing: 0.08em
+        }
+
+        /* ── LAYOUT ── */
+        .workspace {
+            display: flex;
+            height: calc(100vh - 53px);
+            overflow: hidden
+        }
+
+        .schema-panel {
+            flex: 1;
+            overflow: auto;
+            padding: 28px;
+            position: relative
+        }
+
+        .sql-panel {
+            width: 340px;
+            flex-shrink: 0;
+            background: #161b22;
+            border-left: 1px solid rgba(255, 255, 255, 0.07);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        /* ── TABLE CARDS ── */
+        .table-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 20px
+        }
+
+        .table-card {
+            border-radius: 11px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.07)
+        }
+
+        .table-head {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .table-name {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            font-weight: 700
+        }
+
+        .table-count {
+            font-size: 10px;
+            font-weight: 600;
+            opacity: 0.6
+        }
+
+        .col-list {
+            padding: 2px 0 12px
+        }
+
+        .col-row {
+            display: flex;
+            align-items: center;
+            padding: 5px 16px;
+            gap: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            transition: background 120ms;
+            cursor: default
+        }
+
+        .col-row:hover {
+            background: rgba(255, 255, 255, 0.04)
+        }
+
+        .col-key {
+            font-size: 10px;
+            width: 16px;
+            flex-shrink: 0
+        }
+
+        .col-name {
+            color: #e1e4e8;
+            font-weight: 500;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap
+        }
+
+        .col-type {
+            font-size: 10px;
+            opacity: 0.5;
+            flex-shrink: 0
+        }
+
+        .col-pk {
+            color: #ffd700
+        }
+
+        .col-fk {
+            color: #8b5cf6
+        }
+
+        .col-null {
+            color: #8b9198
+        }
+
+        /* Table colors */
+        .card-profiles {
+            background: #0f1a2c;
+        }
+
+        .card-profiles .table-head {
+            background: #1a2744;
+        }
+
+        .table-head.profiles {
+            color: var(--t1);
+        }
+
+        .card-rooms {
+            background: #0c1f18;
+        }
+
+        .card-rooms .table-head {
+            background: #14332a;
+        }
+
+        .table-head.rooms {
+            color: var(--t2);
+        }
+
+        .card-reservations {
+            background: #1f1a0c;
+        }
+
+        .card-reservations .table-head {
+            background: #33280a;
+        }
+
+        .table-head.reservations {
+            color: var(--t3);
+        }
+
+        .card-deposits {
+            background: #1a0f2c;
+        }
+
+        .card-deposits .table-head {
+            background: #2d1944;
+        }
+
+        .table-head.deposits {
+            color: var(--t4);
+        }
+
+        .card-reviews {
+            background: #0c1f2c;
+        }
+
+        .card-reviews .table-head {
+            background: #0f3344;
+        }
+
+        .table-head.reviews {
+            color: var(--t5);
+        }
+
+        .card-audit {
+            background: #2c100f;
+        }
+
+        .card-audit .table-head {
+            background: #461515;
+        }
+
+        .table-head.audit {
+            color: var(--t6);
+        }
+
+        .card-sysconfig {
+            background: #2c0c1f;
+        }
+
+        .card-sysconfig .table-head {
+            background: #440d33;
+        }
+
+        .table-head.sysconfig {
+            color: var(--t7);
+        }
+
+        /* ── RELATIONSHIP LINES ── */
+        .rel-legend {
+            margin-top: 24px;
+            padding: 16px;
+            background: #161b22;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06)
+        }
+
+        .rel-title {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.35);
+            margin-bottom: 10px
+        }
+
+        .rel-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.55)
+        }
+
+        .rel-line {
+            flex: 1;
+            height: 1px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.15);
+            position: relative
+        }
+
+        .rel-line::after {
+            content: '→';
+            position: absolute;
+            right: -2px;
+            top: -10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3)
+        }
+
+        .rel-badge {
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rel-1n {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold)
+        }
+
+        .rel-11 {
+            background: rgba(139, 92, 246, 0.15);
+            color: #8b5cf6
+        }
+
+        /* ── SQL PANEL ── */
+        .sql-panel-head {
+            padding: 14px 18px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+            display: flex;
+            align-items: center;
+            justify-content: space-between
+        }
+
+        .sql-title {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.4)
+        }
+
+        .sql-chips {
+            padding: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.07)
+        }
+
+        .sql-chip {
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 150ms;
+            background: #1f2937;
+            color: rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08)
+        }
+
+        .sql-chip:hover,
+        .sql-chip.active {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--gold);
+            border-color: rgba(212, 175, 55, 0.3)
+        }
+
+        .sql-code-wrap {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px
+        }
+
+        .sql-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.75;
+            white-space: pre-wrap;
+            color: #e1e4e8
+        }
+
+        .sql-keyword {
+            color: #ff7b72
+        }
+
+        .sql-table {
+            color: #79c0ff
+        }
+
+        .sql-alias {
+            color: #ffa657
+        }
+
+        .sql-comment {
+            color: #8b9198;
+            font-style: italic
+        }
+
+        .sql-metrics {
+            padding: 12px 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.07);
+            display: flex;
+            gap: 20px
+        }
+
+        .metric-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px
+        }
+
+        .metric-label {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.3)
+        }
+
+        .metric-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--gold)
+        }
+
+        @media(max-width:1100px) {
+            .workspace {
+                flex-direction: column;
+                height: auto;
+                overflow: visible
+            }
+
+            .sql-panel {
+                width: 100%;
+                height: 420px;
+                border-left: none;
+                border-top: 1px solid rgba(255, 255, 255, 0.07)
+            }
+
+            .schema-panel {
+                height: auto
+            }
+        }
+
+        @media(max-width:600px) {
+            .table-grid {
+                grid-template-columns: 1fr
+            }
+
+            .top-bar .center-info {
+                display: none
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+        <a href="admin.html" class="back-link">← Admin Portal</a>
+        <div class="center-info">
+            <p class="center-label">Database</p>
+            <h1 class="center-title">Schema Viewer</h1>
+        </div>
+        <div class="db-badge">
+            <span class="db-name">innpulse_db</span>
+            <div class="live-badge">
+                <div class="live-dot"></div>
+                <span class="live-text">Live</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- WORKSPACE -->
+    <div class="workspace">
+
+        <!-- SCHEMA DIAGRAM PANEL -->
+        <div class="schema-panel">
+            <div class="table-grid">
+
+                <!-- PROFILES -->
+                <div class="table-card card-profiles">
+                    <div class="table-head profiles">
+                        <span class="table-name">profiles</span>
+                        <span class="table-count">auth.users</span>
+                    </div>
+                    <div class="col-list">
+                        <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
+                                class="col-type">UUID PK</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">username</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">email</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">role</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">active</span><span
+                                class="col-type">BOOLEAN</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">locked</span><span
+                                class="col-type">BOOLEAN</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">last_login</span><span
+                                class="col-type">TIMESTAMP</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">created_at</span><span
+                                class="col-type">TIMESTAMP</span></div>
+                    </div>
+                </div>
+
+                <!-- ROOMS -->
+                <div class="table-card card-rooms">
+                    <div class="table-head rooms">
+                        <span class="table-name">rooms</span>
+                        <span class="table-count">12 records</span>
+                    </div>
+                    <div class="col-list">
+                        <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
+                                class="col-type">UUID PK</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">room_number</span><span
+                                class="col-type">VARCHAR UQ</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">room_name</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">room_type</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">description</span><span
+                                class="col-type">TEXT</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">capacity</span><span
+                                class="col-type">INTEGER</span></div>
+                        <div class="col-row"><span class="col-key"></span><span
+                                class="col-name">nightly_rate</span><span class="col-type">DECIMAL</span></div>
+                        <div class="col-row"><span class="col-key"></span><span
+                                class="col-name">deposit_amount</span><span class="col-type">DECIMAL</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">status</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">image_url</span><span
+                                class="col-type">TEXT</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">amenities</span><span
+                                class="col-type">JSONB</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">created_at</span><span
+                                class="col-type">TIMESTAMP</span></div>
+                    </div>
+                </div>
+
+                <!-- RESERVATIONS -->
+                <div class="table-card card-reservations">
+                    <div class="table-head reservations">
+                        <span class="table-name">reservations</span>
+                        <span class="table-count">central table</span>
+                    </div>
+                    <div class="col-list">
+                        <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
+                                class="col-type">UUID PK</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">guest_id</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">guest_name</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">guest_email</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">guest_phone</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key col-fk">🔗</span><span
+                                class="col-name">room_id</span><span class="col-type">UUID FK</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">check_in</span><span
+                                class="col-type">DATE</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">check_out</span><span
+                                class="col-type">DATE</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">guest_count</span><span
+                                class="col-type">INTEGER</span></div>
+                        <div class="col-row"><span class="col-key"></span><span
+                                class="col-name">special_requests</span><span class="col-type">TEXT</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">status</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">booking_ref</span><span
+                                class="col-type">VARCHAR UQ</span></div>
+                        <div class="col-row"><span class="col-key col-fk">🔗</span><span
+                                class="col-name">created_by</span><span class="col-type">UUID FK</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">created_at</span><span
+                                class="col-type">TIMESTAMP</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">updated_at</span><span
+                                class="col-type">TIMESTAMP</span></div>
+                    </div>
+                </div>
+
+                <!-- DEPOSITS -->
+                <div class="table-card card-deposits">
+                    <div class="table-head deposits">
+                        <span class="table-name">deposits</span>
+                        <span class="col-type" style="opacity:0.5">1:1 reservation</span>
+                    </div>
+                    <div class="col-list">
+                        <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
+                                class="col-type">UUID PK</span></div>
+                        <div class="col-row"><span class="col-key col-fk">🔗</span><span
+                                class="col-name">reservation_id</span><span class="col-type">UUID FK</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">amount</span><span
+                                class="col-type">DECIMAL</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">status</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">receipt_url</span><span
+                                class="col-type">TEXT</span></div>
+                        <div class="col-row"><span class="col-key col-null">◌</span><span
+                                class="col-name">paid_at</span><span class="col-type">TIMESTAMP</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">created_at</span><span
+                                class="col-type">TIMESTAMP</span></div>
+                    </div>
+                </div>
+
+                <!-- REVIEWS -->
+                <div class="table-card card-reviews">
+                    <div class="table-head reviews">
+                        <span class="table-name">reviews</span>
+                        <span class="table-count">public</span>
+                    </div>
+                    <div class="col-list">
+                        <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
+                                class="col-type">UUID PK</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">guest_name</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">rating</span><span
+                                class="col-type">INTEGER</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">review_text</span><span
+                                class="col-type">TEXT</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">approved</span><span
+                                class="col-type">BOOLEAN</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">created_at</span><span
+                                class="col-type">TIMESTAMP</span></div>
+                    </div>
+                </div>
+
+                <!-- AUDIT_LOGS -->
+                <div class="table-card card-audit">
+                    <div class="table-head audit">
+                        <span class="table-name">audit_logs</span>
+                        <span class="table-count">security</span>
+                    </div>
+                    <div class="col-list">
+                        <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
+                                class="col-type">UUID PK</span></div>
+                        <div class="col-row"><span class="col-key col-fk">🔗</span><span
+                                class="col-name">user_id</span><span class="col-type">UUID FK?</span></div>
+                        <div class="col-row"><span class="col-key col-null">◌</span><span
+                                class="col-name">username</span><span class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">ip_address</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">event</span><span
+                                class="col-type">TEXT</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">severity</span><span
+                                class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span
+                                class="col-name">session_reference</span><span class="col-type">VARCHAR</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">metadata</span><span
+                                class="col-type">JSONB</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">occurred_at</span><span
+                                class="col-type">TIMESTAMP</span></div>
+                    </div>
+                </div>
+
+                <!-- SYSTEM_CONFIG -->
+                <div class="table-card card-sysconfig">
+                    <div class="table-head sysconfig">
+                        <span class="table-name">system_config</span>
+                        <span class="table-count">key-value</span>
+                    </div>
+                    <div class="col-list">
+                        <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
+                                class="col-type">UUID PK</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">config_key</span><span
+                                class="col-type">VARCHAR UQ</span></div>
+                        <div class="col-row"><span class="col-key"></span><span
+                                class="col-name">config_value</span><span class="col-type">JSONB</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">updated_at</span><span
+                                class="col-type">TIMESTAMP</span></div>
+                    </div>
+                </div>
+
+            </div><!-- /table-grid -->
+
+            <!-- Relationship Legend -->
+            <div class="rel-legend" style="margin-top:24px">
+                <p class="rel-title">Relationships</p>
+                <div class="rel-item">
+                    <span style="color:#3b82f6;font-weight:700">profiles</span>
+                    <div class="rel-line"></div>
+                    <span class="rel-badge rel-1n">1:N</span>
+                    <span style="color:#f59e0b;font-weight:700">reservations</span>
+                    <span style="opacity:0.4;font-size:10px">(created_by)</span>
+                </div>
+                <div class="rel-item">
+                    <span style="color:#10b981;font-weight:700">rooms</span>
+                    <div class="rel-line"></div>
+                    <span class="rel-badge rel-1n">1:N</span>
+                    <span style="color:#f59e0b;font-weight:700">reservations</span>
+                    <span style="opacity:0.4;font-size:10px">(room_id)</span>
+                </div>
+                <div class="rel-item">
+                    <span style="color:#f59e0b;font-weight:700">reservations</span>
+                    <div class="rel-line"></div>
+                    <span class="rel-badge rel-11">1:1</span>
+                    <span style="color:#8b5cf6;font-weight:700">deposits</span>
+                    <span style="opacity:0.4;font-size:10px">(reservation_id)</span>
+                </div>
+                <div class="rel-item">
+                    <span style="color:#f59e0b;font-weight:700">reservations</span>
+                    <div class="rel-line"></div>
+                    <span class="rel-badge rel-1n">1:N</span>
+                    <span style="color:#ef4444;font-weight:700">audit_logs</span>
+                    <span style="opacity:0.4;font-size:10px">(via user_id)</span>
+                </div>
+            </div>
+
+            <p
+                style="font-size:11px;color:rgba(255,255,255,0.2);text-align:center;margin-top:20px;font-family:'JetBrains Mono',monospace">
+                ⚠ EDUCATIONAL ENVIRONMENT — SYNTHETIC DATA ONLY — DO NOT USE WITH REAL CREDENTIALS
+            </p>
+        </div><!-- /schema-panel -->
+
+        <!-- SQL PANEL -->
+        <div class="sql-panel">
+            <div class="sql-panel-head">
+                <span class="sql-title">SQL Console</span>
+                <span
+                    style="font-size:10px;color:rgba(255,255,255,0.3);font-family:'JetBrains Mono',monospace">READ-ONLY
+                    · DEMO</span>
+            </div>
+            <div class="sql-chips">
+                <span class="sql-chip active" onclick="loadQuery('bookings')">Active Bookings</span>
+                <span class="sql-chip" onclick="loadQuery('failed')">Failed Logins</span>
+                <span class="sql-chip" onclick="loadQuery('schema')">Schema Info</span>
+                <span class="sql-chip" onclick="loadQuery('locked')">Locked Users</span>
+                <span class="sql-chip" onclick="loadQuery('revenue')">Revenue Stats</span>
+            </div>
+            <div class="sql-code-wrap">
+                <pre class="sql-code" id="sql-display"></pre>
+            </div>
+            <div class="sql-metrics">
+                <div class="metric-item">
+                    <span class="metric-label">Exec Time</span>
+                    <span class="metric-value" id="metric-time">0.003s</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Rows</span>
+                    <span class="metric-value" id="metric-rows">—</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-label">Cache</span>
+                    <span class="metric-value" style="color:#10b981">HIT</span>
+                </div>
+            </div>
+        </div><!-- /sql-panel -->
+
+    </div><!-- /workspace -->
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        const SUPABASE_URL = 'https://zkoygowrxpkycfnmkmjm.supabase.co';
+        const SUPABASE_ANON = 'sb_publishable_nDXU4D-y6IuCQRjc9JafqQ_IFWMs5Q-';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+        // ── Auth gate ─────────────────────────────────────────────────────────────────
+        async function init() {
+            const stored = localStorage.getItem('innpulse_user');
+            if (!stored) { window.location.href = 'index.html?login=1'; return; }
+            const sessionUser = JSON.parse(stored);
+            if (sessionUser.role !== 'admin') { window.location.href = 'index.html?login=1'; return; }
+            loadQuery('bookings');
+            logAudit('Schema viewer accessed', sessionUser.email, sessionUser.username || sessionUser.email);
+        }
+
+        // ── Preset queries ────────────────────────────────────────────────────────────
+        const queries = {
+            bookings: {
+                sql: `-- Active Bookings with Deposit Status
+SELECT
+  r.booking_ref,
+  r.guest_name,
+  r.guest_email,
+  rooms.room_number,
+  rooms.room_name,
+  r.check_in,
+  r.check_out,
+  d.status  AS deposit_status,
+  d.amount  AS deposit_amount
+FROM   reservations r
+JOIN   rooms
+  ON   rooms.id = r.room_id
+LEFT   JOIN deposits d
+  ON   d.reservation_id = r.id
+WHERE  r.status = 'confirmed'
+ORDER  BY r.check_in ASC;`,
+                rows: 6,
+                time: '0.003s',
+            },
+            failed: {
+                sql: `-- Failed Login Attempts (last 24h)
+SELECT
+  username,
+  ip_address,
+  event,
+  severity,
+  session_reference,
+  occurred_at
+FROM   audit_logs
+WHERE  severity = 'WARN'
+  AND  event LIKE '%failed login%'
+  AND  occurred_at >= NOW() - INTERVAL '24 hours'
+ORDER  BY occurred_at DESC;`,
+                rows: 3,
+                time: '0.005s',
+            },
+            schema: {
+                sql: `-- Table + Column Overview (pg_catalog)
+SELECT
+  t.table_name,
+  c.column_name,
+  c.data_type,
+  c.is_nullable,
+  c.column_default
+FROM   information_schema.tables t
+JOIN   information_schema.columns c
+  ON   c.table_name = t.table_name
+WHERE  t.table_schema = 'public'
+  AND  t.table_type   = 'BASE TABLE'
+ORDER  BY t.table_name, c.ordinal_position;`,
+                rows: 52,
+                time: '0.011s',
+            },
+            locked: {
+                sql: `-- Currently Locked Accounts
+SELECT
+  id,
+  username,
+  email,
+  role,
+  locked,
+  last_login
+FROM   profiles
+WHERE  locked = TRUE
+ORDER  BY username;`,
+                rows: 1,
+                time: '0.002s',
+            },
+            revenue: {
+                sql: `-- Revenue by Room Type (current month)
+SELECT
+  rooms.room_type,
+  COUNT(r.id)           AS total_reservations,
+  SUM(d.amount)         AS total_deposits,
+  AVG(rooms.nightly_rate) AS avg_nightly_rate,
+  SUM(
+    rooms.nightly_rate *
+    (r.check_out - r.check_in)
+  ) AS estimated_revenue
+FROM   reservations r
+JOIN   rooms
+  ON   rooms.id = r.room_id
+LEFT   JOIN deposits d
+  ON   d.reservation_id = r.id
+WHERE  r.check_in >= date_trunc('month', CURRENT_DATE)
+GROUP  BY rooms.room_type
+ORDER  BY estimated_revenue DESC;`,
+                rows: 5,
+                time: '0.008s',
+            }
+        };
+
+        window.loadQuery = function (key) {
+            document.querySelectorAll('.sql-chip').forEach(c => c.classList.remove('active'));
+            const clicked = [...document.querySelectorAll('.sql-chip')].find(c =>
+                c.textContent.toLowerCase().replace(/\s+/g, '').includes(key.toLowerCase().replace(/\s+/g, ''))
+            );
+            if (clicked) clicked.classList.add('active');
+
+            const q = queries[key];
+            if (!q) return;
+            document.getElementById('sql-display').innerHTML = highlightSQL(q.sql);
+            document.getElementById('metric-rows').textContent = q.rows;
+            document.getElementById('metric-time').textContent = q.time;
+        };
+
+        function highlightSQL(sql) {
+            const keywords = ['SELECT', 'FROM', 'WHERE', 'JOIN', 'LEFT', 'INNER', 'ON', 'ORDER BY', 'ORDER', 'GROUP BY', 'GROUP', 'AND', 'OR', 'AS', 'IN', 'WITH', 'HAVING', 'DISTINCT', 'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'NULL', 'TRUE', 'FALSE', 'LIKE', 'INTERVAL', 'NOW', 'CURRENT_DATE', 'CURRENT_TIMESTAMP'];
+            let result = escapeHTML(sql);
+            keywords.forEach(kw => {
+                result = result.replace(new RegExp(`\\b${kw}\\b`, 'g'),
+                    `<span class="sql-keyword">${kw}</span>`);
+            });
+            result = result.replace(/--[^\n]*/g, m => `<span class="sql-comment">${m}</span>`);
+            result = result.replace(/\b(reservations|rooms|deposits|profiles|audit_logs|reviews|system_config)\b/g,
+                '<span class="sql-table">$1</span>');
+            result = result.replace(/\b([a-z_]+)\s+AS\s+/gi, (_, a) => `<span class="sql-alias">${a}</span> AS `);
+            return result;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        async function logAudit(event, userId, username) {
+            await supabase.from('audit_logs').insert({
+                user_id: userId, username,
+                ip_address: '127.0.0.1', event, severity: 'INFO',
+                session_reference: `sess_demo_${Math.random().toString(36).slice(2, 8)}`,
+                metadata: {}
+            }).catch(() => { });
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

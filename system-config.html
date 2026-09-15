@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InnPulse — System Config</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --charcoal: #12161A;
+            --dark-sec: #1C2228;
+            --off-white: #F8F9FA;
+            --gold: #D4AF37;
+            --muted-gold: #B9982E;
+            --border: #E5E7EB;
+            --muted: #8B9198
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--off-white);
+            color: var(--charcoal);
+            display: flex;
+            min-height: 100vh
+        }
+
+        h1,
+        h2,
+        h3 {
+            font-family: 'Playfair Display', serif
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 240px;
+            min-height: 100vh;
+            background: var(--charcoal);
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            flex-shrink: 0
+        }
+
+        .sidebar-logo {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06)
+        }
+
+        .sidebar-logo-icon {
+            width: 38px;
+            height: 38px;
+            background: var(--gold);
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            margin-bottom: 10px
+        }
+
+        .sidebar-logo-name {
+            font-family: 'Playfair Display', serif;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600
+        }
+
+        .sidebar-logo-role {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-top: 2px
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 16px 12px
+        }
+
+        .nav-section-label {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.28);
+            padding: 8px 12px 4px;
+            margin-top: 8px
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 180ms;
+            width: 100%
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff
+        }
+
+        .nav-item.active {
+            background: rgba(212, 175, 55, 0.14);
+            color: var(--gold);
+            border-left: 2px solid var(--gold)
+        }
+
+        .nav-icon {
+            font-size: 15px;
+            width: 20px;
+            text-align: center
+        }
+
+        .sidebar-footer {
+            padding: 16px 14px;
+            border-top: 1px solid rgba(255, 255, 255, 0.06)
+        }
+
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px
+        }
+
+        .sidebar-avatar {
+            width: 34px;
+            height: 34px;
+            background: rgba(212, 175, 55, 0.18);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px
+        }
+
+        .sidebar-username {
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff
+        }
+
+        .sidebar-userrole {
+            font-size: 10px;
+            color: var(--muted)
+        }
+
+        .btn-signout-side {
+            width: 100%;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 180ms;
+            font-family: 'Inter', sans-serif
+        }
+
+        .btn-signout-side:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff
+        }
+
+        /* MAIN */
+        .main {
+            flex: 1;
+            overflow: auto
+        }
+
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 28px;
+            border-bottom: 1px solid var(--border);
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 40
+        }
+
+        .top-bar-title p {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 2px
+        }
+
+        .top-bar-title h1 {
+            font-size: 22px;
+            font-weight: 600
+        }
+
+        .content {
+            padding: 28px;
+            max-width: 860px
+        }
+
+        /* CONFIG SECTIONS */
+        .config-section {
+            background: #fff;
+            border-radius: 13px;
+            border: 1px solid var(--border);
+            margin-bottom: 20px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05)
+        }
+
+        .config-section-head {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .config-section-icon {
+            font-size: 18px
+        }
+
+        .config-section-title {
+            font-size: 16px;
+            font-weight: 600
+        }
+
+        .config-section-desc {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 1px
+        }
+
+        .config-body {
+            padding: 22px 24px
+        }
+
+        .config-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px
+        }
+
+        .form-group {
+            margin-bottom: 0
+        }
+
+        .form-label {
+            display: block;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 9px 13px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            color: var(--charcoal);
+            background: #fff;
+            outline: none;
+            transition: border-color 180ms, box-shadow 180ms
+        }
+
+        .form-input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1)
+        }
+
+        /* TOGGLE */
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 0;
+            border-bottom: 1px solid #f3f4f6
+        }
+
+        .toggle-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0
+        }
+
+        .toggle-info {}
+
+        .toggle-label {
+            font-size: 14px;
+            font-weight: 600
+        }
+
+        .toggle-desc {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 2px
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 44px;
+            height: 24px;
+            flex-shrink: 0
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute
+        }
+
+        .toggle-track {
+            position: absolute;
+            inset: 0;
+            background: #e5e7eb;
+            border-radius: 100px;
+            cursor: pointer;
+            transition: background 200ms
+        }
+
+        .toggle-switch input:checked+.toggle-track {
+            background: var(--charcoal)
+        }
+
+        .toggle-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 18px;
+            height: 18px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 200ms;
+            pointer-events: none
+        }
+
+        .toggle-switch input:checked~.toggle-thumb {
+            transform: translateX(20px)
+        }
+
+        /* SAVE BTN */
+        .save-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 6px
+        }
+
+        .btn-save {
+            background: var(--charcoal);
+            color: #fff;
+            border: none;
+            padding: 11px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            transition: all 180ms;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .btn-save:hover {
+            background: var(--gold);
+            color: var(--charcoal)
+        }
+
+        .btn-save:disabled {
+            opacity: 0.5;
+            cursor: not-allowed
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            min-width: 280px;
+            padding: 13px 18px;
+            border-radius: 9px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+            animation: slideIn 0.25s ease
+        }
+
+        .toast-success {
+            background: #1a2e1a;
+            color: #6fcf6f;
+            border: 1px solid #2d5a2d
+        }
+
+        .toast-error {
+            background: #2e1a1a;
+            color: #cf6f6f;
+            border: 1px solid #5a2d2d
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(120%);
+                opacity: 0
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1
+            }
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .spin {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite
+        }
+
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 300;
+            background: var(--charcoal);
+            border: none;
+            border-radius: 8px;
+            width: 38px;
+            height: 38px;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #fff;
+            font-size: 18px
+        }
+
+        @media(max-width:900px) {
+            .sidebar {
+                position: fixed;
+                left: -240px;
+                z-index: 200;
+                transition: left 250ms
+            }
+
+            .sidebar.open {
+                left: 0
+            }
+
+            .sidebar-toggle {
+                display: flex
+            }
+
+            .config-grid {
+                grid-template-columns: 1fr
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <div class="sidebar-logo-icon">🏨</div>
+            <p class="sidebar-logo-name">InnPulse</p>
+            <p class="sidebar-logo-role">Administrator</p>
+        </div>
+        <nav class="sidebar-nav">
+            <p class="nav-section-label">Controls</p>
+            <a class="nav-item" href="admin.html"><span class="nav-icon">👥</span> User Management</a>
+            <a class="nav-item" href="audit-logs.html"><span class="nav-icon">🔍</span> Security Audit</a>
+            <a class="nav-item active" href="system-config.html"><span class="nav-icon">⚙</span> System Config</a>
+            <a class="nav-item" href="front-desk.html"><span class="nav-icon">🖥</span> Front Desk</a>
+            <p class="nav-section-label">Database</p>
+            <a class="nav-item" href="schema.html"><span class="nav-icon">🗄</span> Schema Viewer</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">👤</div>
+                <div>
+                    <p class="sidebar-username" id="sidebar-username">Loading…</p>
+                    <p class="sidebar-userrole">Super Admin</p>
+                </div>
+            </div>
+            <button class="btn-signout-side" onclick="signOut()">Sign Out</button>
+        </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+        <div class="top-bar">
+            <div class="top-bar-title">
+                <p>Administration</p>
+                <h1>System Configuration</h1>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <!-- Hotel Info -->
+            <div class="config-section">
+                <div class="config-section-head">
+                    <span class="config-section-icon">🏨</span>
+                    <div>
+                        <p class="config-section-title">Hotel Information</p>
+                        <p class="config-section-desc">Basic hotel details and contact information.</p>
+                    </div>
+                </div>
+                <div class="config-body">
+                    <div class="config-grid" style="margin-bottom:14px">
+                        <div class="form-group">
+                            <label class="form-label">Hotel Name</label>
+                            <input type="text" class="form-input" id="cfg-hotel-name" value="InnPulse Boutique Hotel" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-input" id="cfg-hotel-email"
+                                value="reservations@innpulse.demo" />
+                        </div>
+                    </div>
+                    <div class="config-grid" style="margin-bottom:14px">
+                        <div class="form-group">
+                            <label class="form-label">Phone</label>
+                            <input type="tel" class="form-input" id="cfg-hotel-phone" value="+1 (555) 800-INN1" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Address</label>
+                            <input type="text" class="form-input" id="cfg-hotel-address"
+                                value="12 Harbourview Crescent, City Centre" />
+                        </div>
+                    </div>
+                    <div class="save-row">
+                        <button class="btn-save" onclick="saveSection('hotel')">💾 Save Hotel Info</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reservation Settings -->
+            <div class="config-section">
+                <div class="config-section-head">
+                    <span class="config-section-icon">📅</span>
+                    <div>
+                        <p class="config-section-title">Reservation Settings</p>
+                        <p class="config-section-desc">Default check-in / check-out times and currency.</p>
+                    </div>
+                </div>
+                <div class="config-body">
+                    <div class="config-grid" style="margin-bottom:14px">
+                        <div class="form-group">
+                            <label class="form-label">Default Check-In Time</label>
+                            <input type="time" class="form-input" id="cfg-checkin-time" value="15:00" />
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Default Check-Out Time</label>
+                            <input type="time" class="form-input" id="cfg-checkout-time" value="11:00" />
+                        </div>
+                    </div>
+                    <div class="config-grid">
+                        <div class="form-group">
+                            <label class="form-label">Currency</label>
+                            <select class="form-input" id="cfg-currency">
+                                <option value="USD" selected>USD — US Dollar</option>
+                                <option value="EUR">EUR — Euro</option>
+                                <option value="GBP">GBP — British Pound</option>
+                                <option value="AUD">AUD — Australian Dollar</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Default Deposit %</label>
+                            <input type="number" class="form-input" id="cfg-deposit-pct" value="15" min="0" max="100" />
+                        </div>
+                    </div>
+                    <div class="save-row" style="margin-top:16px">
+                        <button class="btn-save" onclick="saveSection('reservation')">💾 Save Settings</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature Toggles -->
+            <div class="config-section">
+                <div class="config-section-head">
+                    <span class="config-section-icon">🎛</span>
+                    <div>
+                        <p class="config-section-title">Feature Toggles</p>
+                        <p class="config-section-desc">Enable or disable system features.</p>
+                    </div>
+                </div>
+                <div class="config-body">
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <p class="toggle-label">Allow Guest Reviews</p>
+                            <p class="toggle-desc">Guests can submit reviews on the public portal.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="tog-reviews" checked />
+                            <div class="toggle-track"></div>
+                            <div class="toggle-thumb"></div>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <p class="toggle-label">Maintenance Mode</p>
+                            <p class="toggle-desc">Show a maintenance notice on the public website.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="tog-maintenance" />
+                            <div class="toggle-track"></div>
+                            <div class="toggle-thumb"></div>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <p class="toggle-label">Online Reservations</p>
+                            <p class="toggle-desc">Allow guests to make reservations through the portal.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="tog-reservations" checked />
+                            <div class="toggle-track"></div>
+                            <div class="toggle-thumb"></div>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <p class="toggle-label">Deposit Required</p>
+                            <p class="toggle-desc">Require deposit receipt upload at reservation time.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="tog-deposit" />
+                            <div class="toggle-track"></div>
+                            <div class="toggle-thumb"></div>
+                        </label>
+                    </div>
+                    <div class="save-row" style="margin-top:16px">
+                        <button class="btn-save" onclick="saveSection('toggles')">💾 Save Toggles</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="config-section" style="border-color:#fecaca">
+                <div class="config-section-head" style="background:#fef2f2;border-bottom-color:#fecaca">
+                    <span class="config-section-icon">⚠</span>
+                    <div>
+                        <p class="config-section-title" style="color:#dc2626">Danger Zone</p>
+                        <p class="config-section-desc" style="color:#ef4444">These actions are irreversible in a
+                            production environment.</p>
+                    </div>
+                </div>
+                <div class="config-body">
+                    <div class="toggle-row">
+                        <div class="toggle-info">
+                            <p class="toggle-label">Clear All Audit Logs</p>
+                            <p class="toggle-desc">Permanently remove all security audit event records.</p>
+                        </div>
+                        <button onclick="clearAuditLogs()"
+                            style="padding:8px 16px;background:#fee2e2;color:#dc2626;border:1px solid #fecaca;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all 150ms"
+                            onmouseover="this.style.background='#dc2626';this.style.color='#fff'"
+                            onmouseout="this.style.background='#fee2e2';this.style.color='#dc2626'">
+                            Clear Logs
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        const SUPABASE_URL = 'https://zkoygowrxpkycfnmkmjm.supabase.co';
+        const SUPABASE_ANON = 'sb_publishable_nDXU4D-y6IuCQRjc9JafqQ_IFWMs5Q-';
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+        let currentUser = null, currentProfile = null;
+
+        async function init() {
+            const stored = localStorage.getItem('innpulse_user');
+            if (!stored) { window.location.href = 'index.html?login=1'; return; }
+            const sessionUser = JSON.parse(stored);
+            if (sessionUser.role !== 'admin') { window.location.href = 'index.html?login=1'; return; }
+            currentUser = { id: sessionUser.email, email: sessionUser.email };
+            currentProfile = sessionUser;
+            document.getElementById('sidebar-username').textContent = sessionUser.username || sessionUser.email;
+            await loadConfig();
+        }
+
+        async function loadConfig() {
+            const keys = ['hotel_name', 'hotel_email', 'hotel_phone', 'hotel_address',
+                'default_checkin', 'default_checkout', 'currency', 'deposit_pct',
+                'allow_reviews', 'maintenance_mode', 'online_reservations', 'deposit_required'];
+            const { data } = await supabase.from('system_config').select('*').in('config_key', keys);
+            if (!data) return;
+            const map = {};
+            data.forEach(row => { map[row.config_key] = row.config_value; });
+
+            const set = (id, key, fallback) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const val = map[key] !== undefined ? map[key] : fallback;
+                if (el.type === 'checkbox') el.checked = !!val;
+                else el.value = val || fallback;
+            };
+            set('cfg-hotel-name', 'hotel_name', 'InnPulse Boutique Hotel');
+            set('cfg-hotel-email', 'hotel_email', 'reservations@innpulse.demo');
+            set('cfg-hotel-phone', 'hotel_phone', '+1 (555) 800-INN1');
+            set('cfg-hotel-address', 'hotel_address', '12 Harbourview Crescent, City Centre');
+            set('cfg-checkin-time', 'default_checkin', '15:00');
+            set('cfg-checkout-time', 'default_checkout', '11:00');
+            set('cfg-currency', 'currency', 'USD');
+            set('cfg-deposit-pct', 'deposit_pct', '15');
+            set('tog-reviews', 'allow_reviews', true);
+            set('tog-maintenance', 'maintenance_mode', false);
+            set('tog-reservations', 'online_reservations', true);
+            set('tog-deposit', 'deposit_required', false);
+        }
+
+        async function upsertConfig(key, value) {
+            await supabase.from('system_config').upsert(
+                { config_key: key, config_value: value, updated_at: new Date().toISOString() },
+                { onConflict: 'config_key' }
+            );
+        }
+
+        window.saveSection = async function (section) {
+            const btns = document.querySelectorAll('.btn-save');
+            btns.forEach(b => { b.disabled = true; });
+
+            if (section === 'hotel') {
+                await upsertConfig('hotel_name', document.getElementById('cfg-hotel-name').value);
+                await upsertConfig('hotel_email', document.getElementById('cfg-hotel-email').value);
+                await upsertConfig('hotel_phone', document.getElementById('cfg-hotel-phone').value);
+                await upsertConfig('hotel_address', document.getElementById('cfg-hotel-address').value);
+            }
+            if (section === 'reservation') {
+                await upsertConfig('default_checkin', document.getElementById('cfg-checkin-time').value);
+                await upsertConfig('default_checkout', document.getElementById('cfg-checkout-time').value);
+                await upsertConfig('currency', document.getElementById('cfg-currency').value);
+                await upsertConfig('deposit_pct', document.getElementById('cfg-deposit-pct').value);
+            }
+            if (section === 'toggles') {
+                await upsertConfig('allow_reviews', document.getElementById('tog-reviews').checked);
+                await upsertConfig('maintenance_mode', document.getElementById('tog-maintenance').checked);
+                await upsertConfig('online_reservations', document.getElementById('tog-reservations').checked);
+                await upsertConfig('deposit_required', document.getElementById('tog-deposit').checked);
+            }
+            showToast('Settings saved successfully.', 'success');
+            await logAudit(`System config saved: ${section}`, 'INFO');
+            btns.forEach(b => { b.disabled = false; });
+        };
+
+        window.clearAuditLogs = async function () {
+            const ok = await showConfirm('Clear ALL audit log entries? This cannot be undone.');
+            if (!ok) return;
+            await supabase.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            showToast('Audit logs cleared.', 'success');
+        };
+
+        async function logAudit(event, severity = 'INFO') {
+            await supabase.from('audit_logs').insert({
+                user_id: currentUser?.id, username: currentProfile?.username || currentUser?.email,
+                ip_address: '127.0.0.1', event, severity,
+                session_reference: `sess_demo_${Math.random().toString(36).slice(2, 8)}`, metadata: {}
+            }).catch(() => { });
+        }
+
+        function showToast(msg, type = 'info') {
+            const el = document.createElement('div');
+            const icons = { success: '✓', error: '✕', info: 'ℹ' };
+            el.className = `toast toast-${type}`;
+            el.innerHTML = `<span style="font-size:15px">${icons[type] || 'ℹ'}</span><span>${msg}</span>`;
+            document.body.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(60px)'; el.style.transition = 'all 0.3s'; setTimeout(() => el.remove(), 300) }, 3500);
+        }
+
+        function showConfirm(msg) {
+            return new Promise(resolve => {
+                const ov = document.createElement('div');
+                ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(3px);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px';
+                ov.innerHTML = `<div style="background:#fff;border-radius:14px;max-width:400px;width:100%;padding:28px;box-shadow:0 20px 60px rgba(0,0,0,0.25)">
+      <h3 style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:8px">Confirm Action</h3>
+      <p style="font-size:14px;color:#8B9198;margin-bottom:22px">${msg}</p>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button id="c-no" style="padding:9px 18px;border:1px solid #E5E7EB;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600">Cancel</button>
+        <button id="c-yes" style="padding:9px 18px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600">Confirm</button>
+      </div></div>`;
+                document.body.appendChild(ov);
+                ov.querySelector('#c-no').onclick = () => { ov.remove(); resolve(false) };
+                ov.querySelector('#c-yes').onclick = () => { ov.remove(); resolve(true) };
+                ov.onclick = e => { if (e.target === ov) { ov.remove(); resolve(false) } };
+            });
+        }
+
+        window.signOut = function () { localStorage.removeItem('innpulse_user'); window.location.href = 'index.html?login=1'; };
+        window.toggleSidebar = function () { document.getElementById('sidebar').classList.toggle('open'); };
+
+        init();
+    </script>
+</body>
+
+</html>
