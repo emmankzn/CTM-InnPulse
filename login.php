@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/app/bootstrap.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -7,9 +8,9 @@
     <title>InnPulse — Sign In</title>
     <!-- Login is now a modal on the main page. Redirect there. -->
     <script>
-        // If someone lands directly on login.html (e.g. old bookmark, back-button),
-        // send them to index.html and auto-open the login modal.
-        window.location.replace('index.html?login=1');
+        // If someone lands directly on login.php (e.g. old bookmark, back-button),
+        // send them to index.php and auto-open the login modal.
+        window.location.replace('index.php?login=1');
     </script>
 </head>
 

@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/app/bootstrap.php'; require_page(['staff', 'admin']); ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -806,7 +807,7 @@
 
     <!-- ═══════════════════════════════════════ TOP HEADER ═══════ -->
     <header class="top-header">
-        <a href="index.html" class="logo-wrap">
+        <a href="index.php" class="logo-wrap">
             <div class="logo-icon">🏨</div>
             <span class="logo-name">InnPulse</span>
         </a>
@@ -994,10 +995,7 @@
     </div>
 
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-        const SUPABASE_URL = 'https://zkoygowrxpkycfnmkmjm.supabase.co';
-        const SUPABASE_ANON = 'sb_publishable_nDXU4D-y6IuCQRjc9JafqQ_IFWMs5Q-';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+        import api from './js/api.js';
 
         let currentUser = null;
         let currentProfile = null;
@@ -1006,11 +1004,12 @@
 
         // ── Auth gate ─────────────────────────────────────────────────────────────────
         async function init() {
-            const stored = localStorage.getItem('innpulse_user');
-            if (!stored) { window.location.href = 'index.html?login=1'; return; }
+            const sessionProfile = await api.session();
+            const stored = sessionProfile ? JSON.stringify(sessionProfile) : null;
+            if (!stored) { window.location.href = 'index.php?login=1'; return; }
             const sessionUser = JSON.parse(stored);
-            if (sessionUser.role !== 'staff' && sessionUser.role !== 'admin') { window.location.href = 'index.html?login=1'; return; }
-            currentUser = { id: sessionUser.email, email: sessionUser.email };
+            if (sessionUser.role !== 'staff' && sessionUser.role !== 'admin') { window.location.href = 'index.php?login=1'; return; }
+            currentUser = { id: sessionUser.id, email: sessionUser.email };
             currentProfile = sessionUser;
             document.getElementById('user-display-name').textContent = sessionUser.username || sessionUser.email;
             await Promise.all([loadRooms(), loadReservations()]);
@@ -1024,8 +1023,8 @@
 
         // ── Load rooms ────────────────────────────────────────────────────────────────
         async function loadRooms() {
-            const { data, error } = await supabase.from('rooms').select('*').order('room_number');
-            if (error || !data) { allRooms = getFallbackRooms(); }
+            const { data, error } = await api.from('rooms').select('*').order('room_number');
+            if (error || !data) { allRooms = []; showToast('Unable to load database records.', 'error'); }
             else { allRooms = data; }
             renderRoomGrid();
             populateRoomSelect();
@@ -1056,11 +1055,11 @@
 
         // ── Load reservations ─────────────────────────────────────────────────────────
         async function loadReservations() {
-            const { data, error } = await supabase
+            const { data, error } = await api
                 .from('reservations')
                 .select(`*, rooms(room_number, room_name), deposits(status, receipt_url, amount)`)
                 .order('created_at', { ascending: false });
-            if (error || !data) { allReservations = getFallbackReservations(); }
+            if (error || !data) { allReservations = []; showToast('Unable to load database records.', 'error'); }
             else { allReservations = data; }
             renderReservations(allReservations);
             updateKPIs();
@@ -1191,10 +1190,10 @@
 
             if (id) {
                 // Update
-                const { error } = await supabase.from('reservations').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id);
+                const { error } = await api.from('reservations').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', id);
                 if (error) { showToast('Failed to update reservation.', 'error'); }
                 else {
-                    await supabase.from('deposits').update({ status: depStatus }).eq('reservation_id', id);
+                    await api.from('deposits').update({ status: depStatus }).eq('reservation_id', id);
                     showToast('Reservation updated.', 'success');
                     closeResModal();
                     await loadReservations();
@@ -1204,14 +1203,14 @@
                 // Create
                 const bookingRef = generateRef();
                 const guestId = generateGuestId();
-                const { data: res, error } = await supabase.from('reservations')
+                const { data: res, error } = await api.from('reservations')
                     .insert({ ...payload, guest_id: guestId, booking_ref: bookingRef })
                     .select().single();
                 if (error) { showToast('Failed to create reservation.', 'error'); }
                 else {
-                    await supabase.from('deposits').insert({ reservation_id: res.id, amount: 0, status: depStatus });
+                    await api.from('deposits').insert({ reservation_id: res.id, amount: 0, status: depStatus });
                     // Update room status to reserved
-                    await supabase.from('rooms').update({ status: 'reserved' }).eq('id', roomId);
+                    await api.from('rooms').update({ status: 'reserved' }).eq('id', roomId);
                     showToast(`Reservation created: ${bookingRef}`, 'success');
                     closeResModal();
                     await loadReservations();
@@ -1226,8 +1225,8 @@
         window.deleteReservation = async function (id) {
             const confirmed = await showConfirm('Delete this reservation? This action cannot be undone.');
             if (!confirmed) return;
-            await supabase.from('deposits').delete().eq('reservation_id', id);
-            const { error } = await supabase.from('reservations').delete().eq('id', id);
+            await api.from('deposits').delete().eq('reservation_id', id);
+            const { error } = await api.from('reservations').delete().eq('id', id);
             if (error) { showToast('Failed to delete reservation.', 'error'); return; }
             showToast('Reservation deleted.', 'info');
             await loadReservations();
@@ -1248,9 +1247,9 @@
         document.getElementById('receipt-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeReceiptModal(); });
 
         // ── Sign out ──────────────────────────────────────────────────────────────────
-        window.signOut = function () {
-            localStorage.removeItem('innpulse_user');
-            window.location.href = 'index.html?login=1';
+        window.signOut = async function () {
+            await api.logout();
+            window.location.href = 'index.php?login=1';
         };
 
         // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1259,7 +1258,7 @@
         function fmtDate(d) { if (!d) return '—'; const dt = new Date(d + 'T00:00:00'); return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
 
         async function logAudit(event, severity = 'INFO') {
-            await supabase.from('audit_logs').insert({
+            await api.from('audit_logs').insert({
                 user_id: currentUser?.id, username: currentProfile?.username || currentUser?.email,
                 ip_address: '127.0.0.1', event, severity,
                 session_reference: `sess_demo_${Math.random().toString(36).slice(2, 8)}`,

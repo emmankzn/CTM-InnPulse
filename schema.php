@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/app/bootstrap.php'; require_page(['admin']); ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -544,7 +545,7 @@
 
     <!-- TOP BAR -->
     <div class="top-bar">
-        <a href="admin.html" class="back-link">← Admin Portal</a>
+        <a href="admin.php" class="back-link">← Admin Portal</a>
         <div class="center-info">
             <p class="center-label">Database</p>
             <h1 class="center-title">Schema Viewer</h1>
@@ -569,17 +570,18 @@
                 <div class="table-card card-profiles">
                     <div class="table-head profiles">
                         <span class="table-name">profiles</span>
-                        <span class="table-count">auth.users</span>
+                        <span class="table-count">SQLite accounts</span>
                     </div>
                     <div class="col-list">
                         <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
-                                class="col-type">UUID PK</span></div>
+                                class="col-type">TEXT PK</span></div>
+                        <div class="col-row"><span class="col-key"></span><span class="col-name">password_hash</span><span class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">username</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">email</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">role</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">active</span><span
                                 class="col-type">BOOLEAN</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">locked</span><span
@@ -599,27 +601,27 @@
                     </div>
                     <div class="col-list">
                         <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
-                                class="col-type">UUID PK</span></div>
+                                class="col-type">TEXT PK</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">room_number</span><span
-                                class="col-type">VARCHAR UQ</span></div>
+                                class="col-type">TEXT UQ</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">room_name</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">room_type</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">description</span><span
                                 class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">capacity</span><span
                                 class="col-type">INTEGER</span></div>
                         <div class="col-row"><span class="col-key"></span><span
-                                class="col-name">nightly_rate</span><span class="col-type">DECIMAL</span></div>
+                                class="col-name">nightly_rate</span><span class="col-type">NUMERIC</span></div>
                         <div class="col-row"><span class="col-key"></span><span
-                                class="col-name">deposit_amount</span><span class="col-type">DECIMAL</span></div>
+                                class="col-name">deposit_amount</span><span class="col-type">NUMERIC</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">status</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">image_url</span><span
                                 class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">amenities</span><span
-                                class="col-type">JSONB</span></div>
+                                class="col-type">TEXT (JSON)</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">created_at</span><span
                                 class="col-type">TIMESTAMP</span></div>
                     </div>
@@ -633,17 +635,17 @@
                     </div>
                     <div class="col-list">
                         <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
-                                class="col-type">UUID PK</span></div>
+                                class="col-type">TEXT PK</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">guest_id</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">guest_name</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">guest_email</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">guest_phone</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key col-fk">🔗</span><span
-                                class="col-name">room_id</span><span class="col-type">UUID FK</span></div>
+                                class="col-name">room_id</span><span class="col-type">TEXT FK</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">check_in</span><span
                                 class="col-type">DATE</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">check_out</span><span
@@ -653,11 +655,11 @@
                         <div class="col-row"><span class="col-key"></span><span
                                 class="col-name">special_requests</span><span class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">status</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">booking_ref</span><span
-                                class="col-type">VARCHAR UQ</span></div>
+                                class="col-type">TEXT UQ</span></div>
                         <div class="col-row"><span class="col-key col-fk">🔗</span><span
-                                class="col-name">created_by</span><span class="col-type">UUID FK</span></div>
+                                class="col-name">created_by</span><span class="col-type">TEXT FK</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">created_at</span><span
                                 class="col-type">TIMESTAMP</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">updated_at</span><span
@@ -673,13 +675,13 @@
                     </div>
                     <div class="col-list">
                         <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
-                                class="col-type">UUID PK</span></div>
+                                class="col-type">TEXT PK</span></div>
                         <div class="col-row"><span class="col-key col-fk">🔗</span><span
-                                class="col-name">reservation_id</span><span class="col-type">UUID FK</span></div>
+                                class="col-name">reservation_id</span><span class="col-type">TEXT FK</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">amount</span><span
-                                class="col-type">DECIMAL</span></div>
+                                class="col-type">NUMERIC</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">status</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">receipt_url</span><span
                                 class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key col-null">◌</span><span
@@ -697,9 +699,9 @@
                     </div>
                     <div class="col-list">
                         <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
-                                class="col-type">UUID PK</span></div>
+                                class="col-type">TEXT PK</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">guest_name</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">rating</span><span
                                 class="col-type">INTEGER</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">review_text</span><span
@@ -719,21 +721,21 @@
                     </div>
                     <div class="col-list">
                         <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
-                                class="col-type">UUID PK</span></div>
+                                class="col-type">TEXT PK</span></div>
                         <div class="col-row"><span class="col-key col-fk">🔗</span><span
-                                class="col-name">user_id</span><span class="col-type">UUID FK?</span></div>
+                                class="col-name">user_id</span><span class="col-type">TEXT FK?</span></div>
                         <div class="col-row"><span class="col-key col-null">◌</span><span
-                                class="col-name">username</span><span class="col-type">VARCHAR</span></div>
+                                class="col-name">username</span><span class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">ip_address</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">event</span><span
                                 class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">severity</span><span
-                                class="col-type">VARCHAR</span></div>
+                                class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span
-                                class="col-name">session_reference</span><span class="col-type">VARCHAR</span></div>
+                                class="col-name">session_reference</span><span class="col-type">TEXT</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">metadata</span><span
-                                class="col-type">JSONB</span></div>
+                                class="col-type">TEXT (JSON)</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">occurred_at</span><span
                                 class="col-type">TIMESTAMP</span></div>
                     </div>
@@ -747,11 +749,11 @@
                     </div>
                     <div class="col-list">
                         <div class="col-row"><span class="col-key col-pk">🔑</span><span class="col-name">id</span><span
-                                class="col-type">UUID PK</span></div>
+                                class="col-type">TEXT PK</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">config_key</span><span
-                                class="col-type">VARCHAR UQ</span></div>
+                                class="col-type">TEXT UQ</span></div>
                         <div class="col-row"><span class="col-key"></span><span
-                                class="col-name">config_value</span><span class="col-type">JSONB</span></div>
+                                class="col-name">config_value</span><span class="col-type">TEXT (JSON)</span></div>
                         <div class="col-row"><span class="col-key"></span><span class="col-name">updated_at</span><span
                                 class="col-type">TIMESTAMP</span></div>
                     </div>
@@ -801,7 +803,7 @@
         <!-- SQL PANEL -->
         <div class="sql-panel">
             <div class="sql-panel-head">
-                <span class="sql-title">SQL Console</span>
+                <span class="sql-title">SQL Examples</span>
                 <span
                     style="font-size:10px;color:rgba(255,255,255,0.3);font-family:'JetBrains Mono',monospace">READ-ONLY
                     · DEMO</span>
@@ -827,7 +829,7 @@
                 </div>
                 <div class="metric-item">
                     <span class="metric-label">Cache</span>
-                    <span class="metric-value" style="color:#10b981">HIT</span>
+                    <span class="metric-value" style="color:#10b981">Preview</span>
                 </div>
             </div>
         </div><!-- /sql-panel -->
@@ -835,17 +837,15 @@
     </div><!-- /workspace -->
 
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-        const SUPABASE_URL = 'https://zkoygowrxpkycfnmkmjm.supabase.co';
-        const SUPABASE_ANON = 'sb_publishable_nDXU4D-y6IuCQRjc9JafqQ_IFWMs5Q-';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+        import api from './js/api.js';
 
         // ── Auth gate ─────────────────────────────────────────────────────────────────
         async function init() {
-            const stored = localStorage.getItem('innpulse_user');
-            if (!stored) { window.location.href = 'index.html?login=1'; return; }
+            const sessionProfile = await api.session();
+            const stored = sessionProfile ? JSON.stringify(sessionProfile) : null;
+            if (!stored) { window.location.href = 'index.php?login=1'; return; }
             const sessionUser = JSON.parse(stored);
-            if (sessionUser.role !== 'admin') { window.location.href = 'index.html?login=1'; return; }
+            if (sessionUser.role !== 'admin') { window.location.href = 'index.php?login=1'; return; }
             loadQuery('bookings');
             logAudit('Schema viewer accessed', sessionUser.email, sessionUser.username || sessionUser.email);
         }
@@ -886,25 +886,19 @@ SELECT
 FROM   audit_logs
 WHERE  severity = 'WARN'
   AND  event LIKE '%failed login%'
-  AND  occurred_at >= NOW() - INTERVAL '24 hours'
+  AND  occurred_at >= strftime('%Y-%m-%dT%H:%M:%fZ','now','-24 hours')
 ORDER  BY occurred_at DESC;`,
                 rows: 3,
                 time: '0.005s',
             },
             schema: {
-                sql: `-- Table + Column Overview (pg_catalog)
-SELECT
-  t.table_name,
-  c.column_name,
-  c.data_type,
-  c.is_nullable,
-  c.column_default
-FROM   information_schema.tables t
-JOIN   information_schema.columns c
-  ON   c.table_name = t.table_name
-WHERE  t.table_schema = 'public'
-  AND  t.table_type   = 'BASE TABLE'
-ORDER  BY t.table_name, c.ordinal_position;`,
+                sql: `-- SQLite Table + Column Overview
+SELECT m.name AS table_name, p.name AS column_name,
+       p.type AS data_type, p.dflt_value AS column_default
+FROM sqlite_master m
+JOIN pragma_table_info(m.name) p
+WHERE m.type = 'table'
+ORDER BY m.name, p.cid;`,
                 rows: 52,
                 time: '0.011s',
             },
@@ -932,14 +926,14 @@ SELECT
   AVG(rooms.nightly_rate) AS avg_nightly_rate,
   SUM(
     rooms.nightly_rate *
-    (r.check_out - r.check_in)
+    (julianday(r.check_out) - julianday(r.check_in))
   ) AS estimated_revenue
 FROM   reservations r
 JOIN   rooms
   ON   rooms.id = r.room_id
 LEFT   JOIN deposits d
   ON   d.reservation_id = r.id
-WHERE  r.check_in >= date_trunc('month', CURRENT_DATE)
+WHERE  r.check_in >= date('now','start of month')
 GROUP  BY rooms.room_type
 ORDER  BY estimated_revenue DESC;`,
                 rows: 5,
@@ -957,8 +951,8 @@ ORDER  BY estimated_revenue DESC;`,
             const q = queries[key];
             if (!q) return;
             document.getElementById('sql-display').innerHTML = highlightSQL(q.sql);
-            document.getElementById('metric-rows').textContent = q.rows;
-            document.getElementById('metric-time').textContent = q.time;
+            document.getElementById('metric-rows').textContent = 'Preview';
+            document.getElementById('metric-time').textContent = 'Not executed';
         };
 
         function highlightSQL(sql) {
@@ -980,7 +974,7 @@ ORDER  BY estimated_revenue DESC;`,
         }
 
         async function logAudit(event, userId, username) {
-            await supabase.from('audit_logs').insert({
+            await api.from('audit_logs').insert({
                 user_id: userId, username,
                 ip_address: '127.0.0.1', event, severity: 'INFO',
                 session_reference: `sess_demo_${Math.random().toString(36).slice(2, 8)}`,

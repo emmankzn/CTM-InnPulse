@@ -6,15 +6,13 @@
   "scripts": {
     "build:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/output.css",
     "watch:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/output.css --watch",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "python tests/smoke.py",
+    "start": "php -S 127.0.0.1:8000 router.php"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "tailwindcss": "^3.4.1"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.112.4"
   }
 }

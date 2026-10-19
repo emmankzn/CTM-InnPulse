@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/app/bootstrap.php'; require_page(['admin']); ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -669,21 +670,21 @@
 
         <nav class="sidebar-nav">
             <p class="nav-section-label">Controls</p>
-            <a class="nav-item active" href="admin.html">
+            <a class="nav-item active" href="admin.php">
                 <span class="nav-icon">👥</span> User Management
             </a>
-            <a class="nav-item" href="audit-logs.html">
+            <a class="nav-item" href="audit-logs.php">
                 <span class="nav-icon">🔍</span> Security Audit
             </a>
-            <a class="nav-item" href="system-config.html">
+            <a class="nav-item" href="system-config.php">
                 <span class="nav-icon">⚙</span> System Config
             </a>
-            <a class="nav-item" href="front-desk.html">
+            <a class="nav-item" href="front-desk.php">
                 <span class="nav-icon">🖥</span> Front Desk
             </a>
 
             <p class="nav-section-label">Database</p>
-            <a class="nav-item" href="schema.html">
+            <a class="nav-item" href="schema.php">
                 <span class="nav-icon">🗄</span> Schema Viewer
             </a>
         </nav>
@@ -785,10 +786,7 @@
     </div>
 
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-        const SUPABASE_URL = 'https://zkoygowrxpkycfnmkmjm.supabase.co';
-        const SUPABASE_ANON = 'sb_publishable_nDXU4D-y6IuCQRjc9JafqQ_IFWMs5Q-';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+        import api from './js/api.js';
 
         let currentUser = null;
         let currentProfile = null;
@@ -796,11 +794,12 @@
 
         // ── Auth gate ─────────────────────────────────────────────────────────────────
         async function init() {
-            const stored = localStorage.getItem('innpulse_user');
-            if (!stored) { window.location.href = 'index.html?login=1'; return; }
+            const sessionProfile = await api.session();
+            const stored = sessionProfile ? JSON.stringify(sessionProfile) : null;
+            if (!stored) { window.location.href = 'index.php?login=1'; return; }
             const sessionUser = JSON.parse(stored);
-            if (sessionUser.role !== 'admin') { showAccessDenied(); setTimeout(() => window.location.href = 'front-desk.html', 2000); return; }
-            currentUser = { id: sessionUser.email, email: sessionUser.email };
+            if (sessionUser.role !== 'admin') { showAccessDenied(); setTimeout(() => window.location.href = 'front-desk.php', 2000); return; }
+            currentUser = { id: sessionUser.id, email: sessionUser.email };
             currentProfile = sessionUser;
             document.getElementById('sidebar-username').textContent = sessionUser.username || sessionUser.email;
             await loadUsers();
@@ -809,8 +808,8 @@
 
         // ── Load users ────────────────────────────────────────────────────────────────
         async function loadUsers() {
-            const { data, error } = await supabase.from('profiles').select('*').order('created_at');
-            if (error || !data) { allUsers = getFallbackUsers(); }
+            const { data, error } = await api.from('profiles').select('*').order('created_at');
+            if (error || !data) { allUsers = []; showToast('Unable to load database records.', 'error'); }
             else { allUsers = data; }
             renderUsers(allUsers);
         }
@@ -910,30 +909,13 @@
 
             if (id) {
                 // Update profile only
-                const { error } = await supabase.from('profiles').update({ username, email, role }).eq('id', id);
+                const { error } = await api.from('profiles').update({ username, email, role }).eq('id', id);
                 if (error) { showToast('Failed to update user.', 'error'); }
                 else { showToast('User updated successfully.', 'success'); closeUserModal(); await loadUsers(); logAudit(`User role changed: ${username} → ${role}`, 'WARN'); }
             } else {
-                // NOTE: Creating auth users requires admin API (service role key) — not safe on frontend.
-                // Show clear step-by-step instructions for the admin.
-                if (!password || password.length < 6) { showToast('Password must be at least 6 characters.', 'warning'); btn.disabled = false; btn.textContent = 'Create User'; return; }
-
-                const infoDiv = document.createElement('div');
-                infoDiv.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px';
-                infoDiv.innerHTML = `<div style="background:#fff;border-radius:16px;padding:32px;max-width:480px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,0.3)">
-                  <h3 style="font-family:'Playfair Display',serif;font-size:20px;margin-bottom:8px">Create Staff Account</h3>
-                  <p style="font-size:14px;color:#8B9198;margin-bottom:18px">Go to your <strong style="color:#12161A">Supabase Dashboard → Authentication → Users → Add User</strong> and enter:</p>
-                  <div style="background:#F8F9FA;border-radius:9px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:13px;margin-bottom:16px;border:1px solid #E5E7EB">
-                    <p style="margin-bottom:6px">Email: <strong style="color:#12161A">${email}</strong></p>
-                    <p>Password: <strong style="color:#D4AF37">${password}</strong></p>
-                  </div>
-                  <p style="font-size:12px;color:#8B9198;margin-bottom:20px">Then run in Supabase SQL Editor to assign the role:<br>
-                  <code style="background:#F8F9FA;padding:8px 10px;border-radius:6px;display:block;margin-top:8px;font-size:12px;color:#12161A;border:1px solid #E5E7EB">UPDATE profiles SET role='${role}', username='${username}' WHERE email='${email}';</code></p>
-                  <button onclick="this.closest('div').parentElement.remove()" style="width:100%;padding:11px;background:#12161A;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer">Got it</button>
-                </div>`;
-                document.body.appendChild(infoDiv);
-                closeUserModal();
-                logAudit(`Invite initiated for: ${email} (${role})`, 'INFO');
+                const { error } = await api.from('profiles').insert({ username, email, role, password });
+                if (error) showToast(error.message, 'error');
+                else { showToast('User created.', 'success'); closeUserModal(); await loadUsers(); }
             }
             btn.disabled = false; btn.textContent = id ? 'Save Changes' : 'Create User';
         };
@@ -941,7 +923,7 @@
         // ── Lock / Unlock ─────────────────────────────────────────────────────────────
         window.toggleLock = async function (id, lock) {
             if (id === currentUser.id) { showToast('You cannot lock your own account.', 'warning'); return; }
-            const { error } = await supabase.from('profiles').update({ locked: lock }).eq('id', id);
+            const { error } = await api.from('profiles').update({ locked: lock }).eq('id', id);
             if (error) { showToast('Failed to update lock status.', 'error'); return; }
             const action = lock ? 'locked' : 'unlocked';
             showToast(`Account ${action}.`, lock ? 'warning' : 'success');
@@ -952,10 +934,11 @@
         // ── Reset password ────────────────────────────────────────────────────────────
         window.resetPassword = async function (id, email) {
             if (!email) { showToast('No email on record.', 'warning'); return; }
-            // In a real app this would trigger supabase.auth.resetPasswordForEmail
-            // For demo, we just show feedback.
-            showToast(`Password reset instructions would be sent to ${email}. (Demo — no email sent.)`, 'info', 6000);
-            logAudit(`Password reset triggered for: ${email}`, 'WARN');
+            const password = window.prompt('Enter a new password (minimum 6 characters):');
+            if (!password) return;
+            const { error } = await api.from('profiles').update({ password }).eq('id', id);
+            showToast(error ? error.message : 'Password updated.', error ? 'error' : 'success');
+            if (!error) logAudit(`Password reset for: ${email}`, 'WARN');
         };
 
         // ── Remove user ───────────────────────────────────────────────────────────────
@@ -963,7 +946,7 @@
             if (id === currentUser?.id) { showToast('Cannot remove your own account.', 'warning'); return; }
             const ok = await showConfirm(`Remove "${label}" from the system?`);
             if (!ok) return;
-            const { error } = await supabase.from('profiles').delete().eq('id', id);
+            const { error } = await api.from('profiles').delete().eq('id', id);
             if (error) { showToast('Failed to remove user.', 'error'); return; }
             showToast('User removed.', 'info');
             await loadUsers();
@@ -971,9 +954,9 @@
         };
 
         // ── Sign out ──────────────────────────────────────────────────────────────────
-        window.signOut = function () {
-            localStorage.removeItem('innpulse_user');
-            window.location.href = 'index.html?login=1';
+        window.signOut = async function () {
+            await api.logout();
+            window.location.href = 'index.php?login=1';
         };
 
         // ── Mobile sidebar ────────────────────────────────────────────────────────────
@@ -1000,7 +983,7 @@
 
         // ── Helpers ───────────────────────────────────────────────────────────────────
         async function logAudit(event, severity = 'INFO') {
-            await supabase.from('audit_logs').insert({
+            await api.from('audit_logs').insert({
                 user_id: currentUser?.id, username: currentProfile?.username || currentUser?.email,
                 ip_address: '127.0.0.1', event, severity,
                 session_reference: `sess_demo_${Math.random().toString(36).slice(2, 8)}`,

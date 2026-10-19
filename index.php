@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/app/bootstrap.php'; ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -1390,12 +1391,15 @@
 </head>
 
 <body>
+    <?php if (lab_mode()): ?>
+        <div style="background:#991b1b;color:white;padding:12px;text-align:center">Classroom lab mode: SQL injection and unlimited login attempts enabled on localhost.</div>
+    <?php endif; ?>
 
     <!-- ══════════════════════════════════════════════════════════════
      STICKY HEADER
 ══════════════════════════════════════════════════════════════ -->
     <header class="site-header" id="site-header">
-        <a href="index.html" class="logo-group">
+        <a href="index.php" class="logo-group">
             <div class="logo-icon">🏨</div>
             <div class="logo-text">
                 <span>InnPulse</span>
@@ -1940,12 +1944,9 @@
      JAVASCRIPT
 ══════════════════════════════════════════════════════════════ -->
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
-        // ── Supabase config (replace with your values) ───────────────────────────────
-        const SUPABASE_URL = 'https://zkoygowrxpkycfnmkmjm.supabase.co';
-        const SUPABASE_ANON = 'sb_publishable_nDXU4D-y6IuCQRjc9JafqQ_IFWMs5Q-';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+        import api, {
+            request
+        } from './js/api.js';
 
         // ── State ────────────────────────────────────────────────────────────────────
         let allRooms = [];
@@ -1962,7 +1963,8 @@
 
         function setDefaultDates() {
             const today = new Date();
-            const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
             const fmt = d => d.toISOString().split('T')[0];
             document.getElementById('search-checkin').value = fmt(today);
             document.getElementById('search-checkout').value = fmt(tomorrow);
@@ -1973,10 +1975,13 @@
         // ── Load Rooms ───────────────────────────────────────────────────────────────
         async function loadRooms() {
             document.getElementById('rooms-skeleton').style.display = 'grid';
-            const { data, error } = await supabase.from('rooms').select('*').order('room_number');
+            const {
+                data,
+                error
+            } = await api.from('rooms').select('*').order('room_number');
             document.getElementById('rooms-skeleton').style.display = 'none';
             if (error || !data) {
-                renderFallbackRooms();
+                showToast('Unable to load rooms from SQLite.', 'error');
                 return;
             }
             allRooms = data;
@@ -1984,7 +1989,8 @@
         }
 
         function renderFallbackRooms() {
-            allRooms = getFallbackRooms();
+            allRooms = [];
+            showToast('Unable to load database records.', 'error');
             renderRooms(allRooms);
         }
 
@@ -1995,7 +2001,8 @@
             const available = rooms.filter(r => r.status === 'available').length;
 
             if (!rooms.length) {
-                grid.innerHTML = ''; grid.style.display = 'none';
+                grid.innerHTML = '';
+                grid.style.display = 'none';
                 empty.style.display = 'block';
                 count.textContent = 'No rooms match your search.';
                 return;
@@ -2009,9 +2016,24 @@
 
         function roomCardHTML(room) {
             const isUnavail = room.status !== 'available';
-            const badges = { available: '', reserved: '', occupied: '', maintenance: '' };
-            const badgeMap = { available: 'badge-popular', reserved: 'badge-limited', occupied: 'badge-unavailable', maintenance: 'badge-unavailable' };
-            const badgeLabel = { available: 'Most Popular', reserved: 'Reserved', occupied: 'Unavailable', maintenance: 'Maintenance' };
+            const badges = {
+                available: '',
+                reserved: '',
+                occupied: '',
+                maintenance: ''
+            };
+            const badgeMap = {
+                available: 'badge-popular',
+                reserved: 'badge-limited',
+                occupied: 'badge-unavailable',
+                maintenance: 'badge-unavailable'
+            };
+            const badgeLabel = {
+                available: 'Most Popular',
+                reserved: 'Reserved',
+                occupied: 'Unavailable',
+                maintenance: 'Maintenance'
+            };
             const showBadge = room.status !== 'available' || room.is_featured;
 
             const amenities = Array.isArray(room.amenities) ? room.amenities : (room.amenities || []);
@@ -2049,7 +2071,7 @@
         }
 
         // ── Filter logic ──────────────────────────────────────────────────────────────
-        window.filterRooms = function () {
+        window.filterRooms = function() {
             const type = document.getElementById('search-type').value;
             const checkin = document.getElementById('search-checkin').value;
             const checkout = document.getElementById('search-checkout').value;
@@ -2076,7 +2098,7 @@
         }
 
         // ── Reserve Modal ─────────────────────────────────────────────────────────────
-        window.openReserveModal = function (roomId) {
+        window.openReserveModal = function(roomId) {
             selectedRoom = allRooms.find(r => r.id == roomId || String(r.id) === String(roomId));
             if (!selectedRoom) return;
 
@@ -2094,7 +2116,7 @@
             document.body.style.overflow = 'hidden';
         };
 
-        window.closeReserveModal = function () {
+        window.closeReserveModal = function() {
             document.getElementById('reserve-modal').classList.remove('open');
             document.body.style.overflow = '';
             document.getElementById('reserve-form').reset();
@@ -2104,7 +2126,7 @@
             if (e.target === e.currentTarget) closeReserveModal();
         });
 
-        window.previewReceipt = function (e) {
+        window.previewReceipt = function(e) {
             const file = e.target.files[0];
             if (!file) return;
             const reader = new FileReader();
@@ -2117,7 +2139,7 @@
         };
 
         // ── Submit Reservation ────────────────────────────────────────────────────────
-        window.submitReservation = function (e) {
+        window.submitReservation = async function(e) {
             e.preventDefault();
             const btn = document.getElementById('reserve-submit-btn');
 
@@ -2138,54 +2160,48 @@
             const bookingRef = `INP-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
             const guestId = `G-${String(Math.floor(Math.random() * 90000) + 10000)}`;
 
-            // ── Show success INSTANTLY — no waiting for network ───────────────────────
+            if (checkout <= checkin) {
+                showToast('Check-out must follow check-in.', 'error');
+                return;
+            }
             btn.disabled = true;
-            document.getElementById('booking-ref-display').textContent = bookingRef;
+            const receiptImage = document.getElementById('receipt-preview');
+            const {
+                data,
+                error
+            } = await request({
+                action: 'book',
+                reservation: {
+                    guest_name: name,
+                    guest_email: email,
+                    guest_phone: phone,
+                    room_id: roomId,
+                    check_in: checkin,
+                    check_out: checkout,
+                    guest_count: parseInt(guests) || 1,
+                    special_requests: requests,
+                },
+                receipt: receiptImage?.src.startsWith('data:') ? receiptImage.src : null
+            });
+            btn.disabled = false;
+            if (error) {
+                showToast(error.message, 'error');
+                return;
+            }
+            document.getElementById('booking-ref-display').textContent = data.booking_ref;
             document.getElementById('reserve-form-wrap').style.display = 'none';
             document.getElementById('booking-success').style.display = 'block';
-
-            // ── Save to database in the background ────────────────────────────────────
-            (async () => {
-                try {
-                    const { data: res, error: resErr } = await supabase.from('reservations').insert({
-                        guest_id: guestId,
-                        guest_name: name,
-                        guest_email: email,
-                        guest_phone: phone || null,
-                        room_id: roomId,
-                        check_in: checkin,
-                        check_out: checkout,
-                        guest_count: parseInt(guests) || 1,
-                        special_requests: requests || null,
-                        status: 'confirmed',
-                        booking_ref: bookingRef,
-                    }).select().single();
-
-                    if (!resErr && res) {
-                        await supabase.from('deposits').insert({
-                            reservation_id: res.id,
-                            amount: selectedRoom.deposit_amount,
-                            status: 'paid',
-                            paid_at: new Date().toISOString(),
-                        }).catch(() => { });
-                        await supabase.from('rooms').update({ status: 'reserved' }).eq('id', roomId).catch(() => { });
-                        supabase.from('audit_logs').insert({
-                            username: email, ip_address: '0.0.0.0',
-                            event: `Reservation created: ${bookingRef} for ${name}`,
-                            severity: 'INFO',
-                            session_reference: `sess_guest_${Math.random().toString(36).slice(2, 8)}`,
-                            metadata: { booking_ref: bookingRef, room: selectedRoom.room_number },
-                        }).catch(() => { });
-                        loadRooms();
-                    }
-                } catch (_) { /* silent — user already sees success */ }
-            })();
+            await loadRooms();
         };
 
         // ── Load Reviews ──────────────────────────────────────────────────────────────
         async function loadReviews() {
-            const { data } = await supabase.from('reviews').select('*')
-                .eq('approved', true).order('created_at', { ascending: false }).limit(3);
+            const {
+                data
+            } = await api.from('reviews').select('*')
+                .eq('approved', true).order('created_at', {
+                    ascending: false
+                }).limit(3);
             if (!data || !data.length) return;
             const grid = document.getElementById('reviews-grid');
             grid.innerHTML = data.map(r => `
@@ -2198,29 +2214,40 @@
         }
 
         // ── Submit Review ─────────────────────────────────────────────────────────────
-        window.submitReview = async function (e) {
+        window.submitReview = async function(e) {
             e.preventDefault();
-            if (!selectedRating) { showToast('Please select a star rating.', 'warning'); return; }
+            if (!selectedRating) {
+                showToast('Please select a star rating.', 'warning');
+                return;
+            }
             const name = document.getElementById('review-name').value.trim();
             const text = document.getElementById('review-text').value.trim();
             const btn = document.getElementById('review-btn');
-            btn.disabled = true; btn.textContent = 'Submitting…';
+            btn.disabled = true;
+            btn.textContent = 'Submitting…';
 
-            const { error } = await supabase.from('reviews').insert({
-                guest_name: name, rating: selectedRating,
-                review_text: text, approved: false,
+            const {
+                error
+            } = await api.from('reviews').insert({
+                guest_name: name,
+                rating: selectedRating,
+                review_text: text,
+                approved: false,
             });
 
-            if (error) { showToast('Could not submit review.', 'error'); }
-            else {
+            if (error) {
+                showToast('Could not submit review.', 'error');
+            } else {
                 showToast('Thank you for your review! It will appear once approved.', 'success');
-                e.target.reset(); setRating(0);
+                e.target.reset();
+                setRating(0);
             }
-            btn.disabled = false; btn.textContent = 'Submit Review';
+            btn.disabled = false;
+            btn.textContent = 'Submit Review';
         };
 
         // ── Star rating ───────────────────────────────────────────────────────────────
-        window.setRating = function (val) {
+        window.setRating = function(val) {
             selectedRating = val;
             document.querySelectorAll('.star-btn').forEach((s, i) => {
                 s.style.color = i < val ? '#D4AF37' : '#8B9198';
@@ -2228,18 +2255,18 @@
         };
 
         // ── Contact form ──────────────────────────────────────────────────────────────
-        window.submitContact = function (e) {
+        window.submitContact = function(e) {
             e.preventDefault();
             showToast('Message sent! We\'ll be in touch shortly.', 'success');
             e.target.reset();
         };
 
         // ── Mobile menu ───────────────────────────────────────────────────────────────
-        window.toggleMobileMenu = function () {
+        window.toggleMobileMenu = function() {
             const menu = document.getElementById('mobile-menu');
             menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
         };
-        window.closeMobileMenu = function () {
+        window.closeMobileMenu = function() {
             document.getElementById('mobile-menu').style.display = 'none';
         };
 
@@ -2247,6 +2274,7 @@
         function generateBookingRef() {
             return `INP-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
         }
+
         function generateGuestId() {
             return `G-${String(Math.floor(Math.random() * 9000) + 1000)}`;
         }
@@ -2263,72 +2291,218 @@
         }
 
         function getFallbackRooms() {
-            return [
-                { id: 'r1', room_number: '101', room_name: 'Grand Deluxe Suite', room_type: 'Suite', capacity: 2, nightly_rate: 420, deposit_amount: 150, status: 'available', image_url: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80', amenities: ['King Bed', 'Ocean View', 'Butler Service'], is_featured: true },
-                { id: 'r2', room_number: '102', room_name: 'Classic Room', room_type: 'Classic', capacity: 2, nightly_rate: 180, deposit_amount: 60, status: 'available', image_url: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=80', amenities: ['Queen Bed', 'City View', 'Free Wi-Fi'] },
-                { id: 'r3', room_number: '103', room_name: 'Classic Room', room_type: 'Classic', capacity: 2, nightly_rate: 180, deposit_amount: 60, status: 'occupied', image_url: 'https://images.unsplash.com/photo-1566195992011-5f6b21e539aa?w=600&q=80', amenities: ['Twin Beds', 'Garden View'] },
-                { id: 'r4', room_number: '115', room_name: 'Classic Room', room_type: 'Classic', capacity: 2, nightly_rate: 195, deposit_amount: 65, status: 'available', image_url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80', amenities: ['King Bed', 'Pool View'] },
-                { id: 'r5', room_number: '201', room_name: 'Garden Loft', room_type: 'Loft', capacity: 3, nightly_rate: 320, deposit_amount: 110, status: 'available', image_url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&q=80', amenities: ['King Bed', 'Garden Access', 'Terrace'] },
-                { id: 'r6', room_number: '202', room_name: 'Heritage Loft Room', room_type: 'Loft', capacity: 2, nightly_rate: 280, deposit_amount: 95, status: 'reserved', image_url: 'https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=600&q=80', amenities: ['Queen Bed', 'City View', 'Workspace'] },
-                { id: 'r7', room_number: '210', room_name: 'Botanical Suite', room_type: 'Suite', capacity: 2, nightly_rate: 380, deposit_amount: 130, status: 'available', image_url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&q=80', amenities: ['King Bed', 'Botanical Garden View', 'Spa Bath'] },
-                { id: 'r8', room_number: '211', room_name: 'Deluxe Suite', room_type: 'Suite', capacity: 3, nightly_rate: 450, deposit_amount: 160, status: 'available', image_url: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80', amenities: ['King Bed', 'Sea View', 'Private Lounge'] },
-                { id: 'r9', room_number: '218', room_name: 'Signature Suite', room_type: 'Suite', capacity: 4, nightly_rate: 620, deposit_amount: 200, status: 'available', image_url: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=600&q=80', amenities: ['Master Bed', 'Ocean Panorama', 'Butler Service'], is_featured: true },
-                { id: 'r10', room_number: '303', room_name: 'Atelier Penthouse', room_type: 'Penthouse', capacity: 4, nightly_rate: 980, deposit_amount: 300, status: 'available', image_url: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=600&q=80', amenities: ['2 Bedrooms', 'Panoramic View', 'Private Pool'], is_featured: true },
-                { id: 'r11', room_number: '401', room_name: 'Studio', room_type: 'Studio', capacity: 1, nightly_rate: 140, deposit_amount: 50, status: 'available', image_url: 'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?w=600&q=80', amenities: ['Double Bed', 'Compact Kitchen'] },
-                { id: 'r12', room_number: '405', room_name: 'Library Studio', room_type: 'Studio', capacity: 2, nightly_rate: 165, deposit_amount: 55, status: 'maintenance', image_url: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=600&q=80', amenities: ['Queen Bed', 'Reading Nook'] },
+            return [{
+                    id: 'r1',
+                    room_number: '101',
+                    room_name: 'Grand Deluxe Suite',
+                    room_type: 'Suite',
+                    capacity: 2,
+                    nightly_rate: 420,
+                    deposit_amount: 150,
+                    status: 'available',
+                    image_url: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80',
+                    amenities: ['King Bed', 'Ocean View', 'Butler Service'],
+                    is_featured: true
+                },
+                {
+                    id: 'r2',
+                    room_number: '102',
+                    room_name: 'Classic Room',
+                    room_type: 'Classic',
+                    capacity: 2,
+                    nightly_rate: 180,
+                    deposit_amount: 60,
+                    status: 'available',
+                    image_url: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=600&q=80',
+                    amenities: ['Queen Bed', 'City View', 'Free Wi-Fi']
+                },
+                {
+                    id: 'r3',
+                    room_number: '103',
+                    room_name: 'Classic Room',
+                    room_type: 'Classic',
+                    capacity: 2,
+                    nightly_rate: 180,
+                    deposit_amount: 60,
+                    status: 'occupied',
+                    image_url: 'https://images.unsplash.com/photo-1566195992011-5f6b21e539aa?w=600&q=80',
+                    amenities: ['Twin Beds', 'Garden View']
+                },
+                {
+                    id: 'r4',
+                    room_number: '115',
+                    room_name: 'Classic Room',
+                    room_type: 'Classic',
+                    capacity: 2,
+                    nightly_rate: 195,
+                    deposit_amount: 65,
+                    status: 'available',
+                    image_url: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600&q=80',
+                    amenities: ['King Bed', 'Pool View']
+                },
+                {
+                    id: 'r5',
+                    room_number: '201',
+                    room_name: 'Garden Loft',
+                    room_type: 'Loft',
+                    capacity: 3,
+                    nightly_rate: 320,
+                    deposit_amount: 110,
+                    status: 'available',
+                    image_url: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&q=80',
+                    amenities: ['King Bed', 'Garden Access', 'Terrace']
+                },
+                {
+                    id: 'r6',
+                    room_number: '202',
+                    room_name: 'Heritage Loft Room',
+                    room_type: 'Loft',
+                    capacity: 2,
+                    nightly_rate: 280,
+                    deposit_amount: 95,
+                    status: 'reserved',
+                    image_url: 'https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=600&q=80',
+                    amenities: ['Queen Bed', 'City View', 'Workspace']
+                },
+                {
+                    id: 'r7',
+                    room_number: '210',
+                    room_name: 'Botanical Suite',
+                    room_type: 'Suite',
+                    capacity: 2,
+                    nightly_rate: 380,
+                    deposit_amount: 130,
+                    status: 'available',
+                    image_url: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&q=80',
+                    amenities: ['King Bed', 'Botanical Garden View', 'Spa Bath']
+                },
+                {
+                    id: 'r8',
+                    room_number: '211',
+                    room_name: 'Deluxe Suite',
+                    room_type: 'Suite',
+                    capacity: 3,
+                    nightly_rate: 450,
+                    deposit_amount: 160,
+                    status: 'available',
+                    image_url: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&q=80',
+                    amenities: ['King Bed', 'Sea View', 'Private Lounge']
+                },
+                {
+                    id: 'r9',
+                    room_number: '218',
+                    room_name: 'Signature Suite',
+                    room_type: 'Suite',
+                    capacity: 4,
+                    nightly_rate: 620,
+                    deposit_amount: 200,
+                    status: 'available',
+                    image_url: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=600&q=80',
+                    amenities: ['Master Bed', 'Ocean Panorama', 'Butler Service'],
+                    is_featured: true
+                },
+                {
+                    id: 'r10',
+                    room_number: '303',
+                    room_name: 'Atelier Penthouse',
+                    room_type: 'Penthouse',
+                    capacity: 4,
+                    nightly_rate: 980,
+                    deposit_amount: 300,
+                    status: 'available',
+                    image_url: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=600&q=80',
+                    amenities: ['2 Bedrooms', 'Panoramic View', 'Private Pool'],
+                    is_featured: true
+                },
+                {
+                    id: 'r11',
+                    room_number: '401',
+                    room_name: 'Studio',
+                    room_type: 'Studio',
+                    capacity: 1,
+                    nightly_rate: 140,
+                    deposit_amount: 50,
+                    status: 'available',
+                    image_url: 'https://images.unsplash.com/photo-1595576508898-0ad5c879a061?w=600&q=80',
+                    amenities: ['Double Bed', 'Compact Kitchen']
+                },
+                {
+                    id: 'r12',
+                    room_number: '405',
+                    room_name: 'Library Studio',
+                    room_type: 'Studio',
+                    capacity: 2,
+                    nightly_rate: 165,
+                    deposit_amount: 55,
+                    status: 'maintenance',
+                    image_url: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=600&q=80',
+                    amenities: ['Queen Bed', 'Reading Nook']
+                },
             ];
         }
 
         function showToast(msg, type = 'info') {
             const el = document.createElement('div');
-            const icons = { success: '✓', error: '✕', warning: '⚠', info: 'ℹ' };
+            const icons = {
+                success: '✓',
+                error: '✕',
+                warning: '⚠',
+                info: 'ℹ'
+            };
             el.className = `toast toast-${type}`;
             el.innerHTML = `<span style="font-size:16px">${icons[type] || 'ℹ'}</span><span>${msg}</span>`;
             document.body.appendChild(el);
-            setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(60px)'; el.style.transition = 'all 0.3s'; setTimeout(() => el.remove(), 300); }, 3500);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(60px)';
+                el.style.transition = 'all 0.3s';
+                setTimeout(() => el.remove(), 300);
+            }, 3500);
         }
 
         // ══════════════════════════════════════════════════════════════
         // LOGIN MODAL
         // ══════════════════════════════════════════════════════════════
 
-        // Hardcoded demo accounts — no Supabase Auth needed
-        const DEMO_ACCOUNTS = {
-            'admin@innpulse.com': { password: 'admin@innpulse', role: 'admin', username: 'admin.root', redirect: 'admin.html' },
-            'staff@innpulse.com': { password: 'staff@innpulse', role: 'staff', username: 'jane.staff', redirect: 'front-desk.html' },
-        };
-
-        window.openLoginModal = function () {
-            const stored = localStorage.getItem('innpulse_user');
+        window.openLoginModal = async function() {
+            const sessionProfile = await api.session();
+            const stored = sessionProfile ? JSON.stringify(sessionProfile) : null;
             if (stored) {
                 try {
                     const u = JSON.parse(stored);
-                    window.location.href = u.role === 'admin' ? 'admin.html' : 'front-desk.html';
+                    window.location.href = u.role === 'admin' ? 'admin.php' : 'front-desk.php';
                     return;
-                } catch (_) { localStorage.removeItem('innpulse_user'); }
+                } catch (_) {
+                    await api.logout();
+                }
             }
             document.getElementById('login-modal-overlay').classList.add('open');
             document.body.style.overflow = 'hidden';
             setTimeout(() => document.getElementById('lm-email').focus(), 120);
         };
 
-        window.closeLoginModal = function () {
+        window.closeLoginModal = function() {
             document.getElementById('login-modal-overlay').classList.remove('open');
             document.body.style.overflow = '';
             document.getElementById('lm-form').reset();
             document.getElementById('lm-error').style.display = 'none';
             document.querySelectorAll('.lm-input').forEach(i => i.classList.remove('lm-error'));
             const btn = document.getElementById('lm-submit-btn');
-            if (btn) { btn.disabled = false; btn.textContent = 'Sign In →'; }
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = 'Sign In →';
+            }
         };
 
-        window.handleLoginOverlayClick = function (e) {
+        window.handleLoginOverlayClick = function(e) {
             if (e.target === document.getElementById('login-modal-overlay')) closeLoginModal();
         };
 
-        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLoginModal(); });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeLoginModal();
+        });
 
-        window.handleLoginModal = function (e) {
+        window.handleLoginModal = async function(e) {
             e.preventDefault();
             const email = document.getElementById('lm-email').value.trim().toLowerCase();
             const password = document.getElementById('lm-password').value;
@@ -2337,29 +2511,25 @@
             document.getElementById('lm-error').style.display = 'none';
             document.querySelectorAll('.lm-input').forEach(i => i.classList.remove('lm-error'));
 
-            if (!email || !password) { showLmError('Please enter your email and password.'); return; }
+            if (!email || !password) {
+                showLmError('Please enter your email and password.');
+                return;
+            }
 
             btn.disabled = true;
             btn.innerHTML = '<span class="lm-spinner"></span>';
 
-            setTimeout(() => {
-                const account = DEMO_ACCOUNTS[email];
-                if (!account || account.password !== password) {
-                    showLmError('Invalid email or password. Please try again.');
-                    document.getElementById('lm-email').classList.add('lm-error');
-                    document.getElementById('lm-password').classList.add('lm-error');
-                    btn.disabled = false;
-                    btn.textContent = 'Sign In →';
-                    return;
-                }
-                localStorage.setItem('innpulse_user', JSON.stringify({
-                    email: email,
-                    username: account.username,
-                    role: account.role,
-                    loggedInAt: new Date().toISOString(),
-                }));
-                window.location.href = account.redirect;
-            }, 600);
+            const {
+                data: account,
+                error
+            } = await api.login(email, password);
+            if (error || !account) {
+                showLmError(error?.message || 'Sign in failed.');
+                btn.disabled = false;
+                btn.textContent = 'Sign In →';
+                return;
+            }
+            window.location.href = account.role === 'admin' ? 'admin.php' : 'front-desk.php';
         };
 
         function showLmError(msg) {
@@ -2367,36 +2537,44 @@
             document.getElementById('lm-error').style.display = 'flex';
         }
 
-        window.fillLmDemo = function (email, password) {
+        window.fillLmDemo = function(email, password) {
             document.getElementById('lm-email').value = email;
             document.getElementById('lm-password').value = password;
             document.getElementById('lm-error').style.display = 'none';
         };
 
-        window.toggleLmPw = function () {
+        window.toggleLmPw = function() {
             const input = document.getElementById('lm-password');
             const btn = input.nextElementSibling;
-            if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
-            else { input.type = 'password'; btn.textContent = '👁'; }
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                btn.textContent = '👁';
+            }
         };
 
         // On page load: auto-open if ?login=1, show Portal button if already logged in
-        (() => {
+        (async () => {
             if (new URLSearchParams(window.location.search).get('login') === '1') {
                 history.replaceState({}, '', window.location.pathname);
                 setTimeout(() => window.openLoginModal(), 300);
             }
-            const stored = localStorage.getItem('innpulse_user');
+            const sessionProfile = await api.session();
+            const stored = sessionProfile ? JSON.stringify(sessionProfile) : null;
             if (stored) {
                 try {
                     const u = JSON.parse(stored);
                     document.querySelectorAll('.btn-login').forEach(btn => {
                         btn.textContent = '→ Portal';
                         btn.onclick = () => {
-                            window.location.href = u.role === 'admin' ? 'admin.html' : 'front-desk.html';
+                            window.location.href = u.role === 'admin' ? 'admin.php' : 'front-desk.php';
                         };
                     });
-                } catch (_) { localStorage.removeItem('innpulse_user'); }
+                } catch (_) {
+                    await api.logout();
+                }
             }
         })();
 

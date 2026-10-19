@@ -2,17 +2,18 @@
  * InnPulse — Authentication & Session Helpers
  */
 
-import supabase from './supabase.js';
+import api from './api.js';
 
 // ─── Get current session user ─────────────────────────────────────────────────
 export async function getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+    return await api.session();
 }
 
 // ─── Get user profile (role etc.) ────────────────────────────────────────────
 export async function getUserProfile(userId) {
-    const { data, error } = await supabase
+    const session = await api.session();
+    if (session?.id === userId) return session;
+    const { data, error } = await api
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -25,16 +26,16 @@ export async function getUserProfile(userId) {
 export async function requireAuth(allowedRoles = ['staff', 'admin']) {
     const user = await getCurrentUser();
     if (!user) {
-        window.location.href = 'login.html';
+        window.location.href = 'login.php';
         return null;
     }
     const profile = await getUserProfile(user.id);
     if (!profile || !allowedRoles.includes(profile.role)) {
         if (profile && profile.role === 'staff') {
             showAccessDenied('Staff cannot access this area.');
-            setTimeout(() => window.location.href = 'front-desk.html', 2000);
+            setTimeout(() => window.location.href = 'front-desk.php', 2000);
         } else {
-            window.location.href = 'login.html';
+            window.location.href = 'login.php';
         }
         return null;
     }
@@ -43,8 +44,8 @@ export async function requireAuth(allowedRoles = ['staff', 'admin']) {
 
 // ─── Sign out ─────────────────────────────────────────────────────────────────
 export async function signOut() {
-    await supabase.auth.signOut();
-    window.location.href = 'login.html';
+    await api.logout();
+    window.location.href = 'login.php';
 }
 
 // ─── Access Denied Banner ─────────────────────────────────────────────────────
@@ -66,4 +67,4 @@ export function renderUserBadge(profile, containerSelector) {
     el.textContent = profile.username || profile.email || 'User';
 }
 
-export { supabase };
+export { api };

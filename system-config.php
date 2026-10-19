@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/app/bootstrap.php'; require_page(['admin']); ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -515,12 +516,12 @@
         </div>
         <nav class="sidebar-nav">
             <p class="nav-section-label">Controls</p>
-            <a class="nav-item" href="admin.html"><span class="nav-icon">👥</span> User Management</a>
-            <a class="nav-item" href="audit-logs.html"><span class="nav-icon">🔍</span> Security Audit</a>
-            <a class="nav-item active" href="system-config.html"><span class="nav-icon">⚙</span> System Config</a>
-            <a class="nav-item" href="front-desk.html"><span class="nav-icon">🖥</span> Front Desk</a>
+            <a class="nav-item" href="admin.php"><span class="nav-icon">👥</span> User Management</a>
+            <a class="nav-item" href="audit-logs.php"><span class="nav-icon">🔍</span> Security Audit</a>
+            <a class="nav-item active" href="system-config.php"><span class="nav-icon">⚙</span> System Config</a>
+            <a class="nav-item" href="front-desk.php"><span class="nav-icon">🖥</span> Front Desk</a>
             <p class="nav-section-label">Database</p>
-            <a class="nav-item" href="schema.html"><span class="nav-icon">🗄</span> Schema Viewer</a>
+            <a class="nav-item" href="schema.php"><span class="nav-icon">🗄</span> Schema Viewer</a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -714,19 +715,17 @@
     </div>
 
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-        const SUPABASE_URL = 'https://zkoygowrxpkycfnmkmjm.supabase.co';
-        const SUPABASE_ANON = 'sb_publishable_nDXU4D-y6IuCQRjc9JafqQ_IFWMs5Q-';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+        import api from './js/api.js';
 
         let currentUser = null, currentProfile = null;
 
         async function init() {
-            const stored = localStorage.getItem('innpulse_user');
-            if (!stored) { window.location.href = 'index.html?login=1'; return; }
+            const sessionProfile = await api.session();
+            const stored = sessionProfile ? JSON.stringify(sessionProfile) : null;
+            if (!stored) { window.location.href = 'index.php?login=1'; return; }
             const sessionUser = JSON.parse(stored);
-            if (sessionUser.role !== 'admin') { window.location.href = 'index.html?login=1'; return; }
-            currentUser = { id: sessionUser.email, email: sessionUser.email };
+            if (sessionUser.role !== 'admin') { window.location.href = 'index.php?login=1'; return; }
+            currentUser = { id: sessionUser.id, email: sessionUser.email };
             currentProfile = sessionUser;
             document.getElementById('sidebar-username').textContent = sessionUser.username || sessionUser.email;
             await loadConfig();
@@ -736,7 +735,7 @@
             const keys = ['hotel_name', 'hotel_email', 'hotel_phone', 'hotel_address',
                 'default_checkin', 'default_checkout', 'currency', 'deposit_pct',
                 'allow_reviews', 'maintenance_mode', 'online_reservations', 'deposit_required'];
-            const { data } = await supabase.from('system_config').select('*').in('config_key', keys);
+            const { data } = await api.from('system_config').select('*').in('config_key', keys);
             if (!data) return;
             const map = {};
             data.forEach(row => { map[row.config_key] = row.config_value; });
@@ -763,7 +762,7 @@
         }
 
         async function upsertConfig(key, value) {
-            await supabase.from('system_config').upsert(
+            await api.from('system_config').upsert(
                 { config_key: key, config_value: value, updated_at: new Date().toISOString() },
                 { onConflict: 'config_key' }
             );
@@ -799,12 +798,12 @@
         window.clearAuditLogs = async function () {
             const ok = await showConfirm('Clear ALL audit log entries? This cannot be undone.');
             if (!ok) return;
-            await supabase.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            await api.from('audit_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
             showToast('Audit logs cleared.', 'success');
         };
 
         async function logAudit(event, severity = 'INFO') {
-            await supabase.from('audit_logs').insert({
+            await api.from('audit_logs').insert({
                 user_id: currentUser?.id, username: currentProfile?.username || currentUser?.email,
                 ip_address: '127.0.0.1', event, severity,
                 session_reference: `sess_demo_${Math.random().toString(36).slice(2, 8)}`, metadata: {}
@@ -838,7 +837,7 @@
             });
         }
 
-        window.signOut = function () { localStorage.removeItem('innpulse_user'); window.location.href = 'index.html?login=1'; };
+        window.signOut = async function () { await api.logout(); window.location.href = 'index.php?login=1'; };
         window.toggleSidebar = function () { document.getElementById('sidebar').classList.toggle('open'); };
 
         init();

@@ -1,246 +1,90 @@
-# InnPulse Boutique Hotel
+# InnPulse — PHP + SQLite
 
-> **⚠ EDUCATIONAL / DEMONSTRATION ENVIRONMENT**
-> This application uses **synthetic data only**. It is intended for controlled cybersecurity demonstrations, educational labs, and learning purposes. **Do not deploy with real customer data, real payment credentials, or real production secrets.**
+InnPulse keeps its existing hotel interface, Tailwind CSS, and JavaScript, with PHP pages, a PHP JSON API, server sessions, and a local SQLite database. Supabase is no longer used.
 
----
+## Run locally
 
-## Overview
+Requirements: PHP 8.1+ with PDO SQLite enabled. XAMPP on this computer already provides PHP 8.2 and `pdo_sqlite`.
 
-InnPulse is a complete hotel reservation and management web application built with:
+From the project directory:
 
-| Layer    | Technology              |
-|----------|-------------------------|
-| Frontend | HTML5, Tailwind CSS, Vanilla JavaScript |
-| Backend  | Supabase (PostgreSQL + Auth + Storage) |
-| Auth     | Supabase Email/Password (intentionally basic — demo purposes) |
-
-### Intentionally Basic Authentication
-
-The login mechanism is **deliberately simple** for use as a cybersecurity demonstration environment. The following features are **intentionally absent**:
-
-- Multi-factor authentication (MFA / 2FA)
-- CAPTCHA or reCAPTCHA
-- Biometric or passwordless authentication
-- Custom brute-force protection or application-level rate limiting
-- Device verification or trusted device flows
-- Social login
-
-This is by design. The application demonstrates what **basic** authentication looks like so students can identify and discuss its weaknesses in a controlled lab setting.
-
----
-
-## Project Structure
-
-```
-InnPulse/
-├── index.html           — Public guest portal & landing page
-├── login.html           — Unified staff/admin login
-├── front-desk.html      — Front desk dashboard (staff/admin)
-├── admin.html           — User management (admin only)
-├── audit-logs.html      — Security audit logs (admin only)
-├── system-config.html   — System configuration (admin only)
-├── schema.html          — Database schema viewer (admin only)
-├── assets/
-│   ├── css/
-│   │   ├── input.css    — Tailwind source
-│   │   └── output.css   — Compiled CSS (generated)
-│   └── images/
-├── js/
-│   ├── supabase.js      — Supabase client initialization
-│   ├── auth.js          — Auth helpers
-│   └── utils.js         — Shared utilities
-├── supabase/
-│   ├── schema.sql       — Database schema + RLS policies
-│   └── seed.sql         — Demo seed data
-├── .env.example         — Environment variable template
-├── tailwind.config.js
-├── package.json
-└── README.md
+```powershell
+php -S 127.0.0.1:8000 router.php
 ```
 
----
+Open **http://127.0.0.1:8000**. PHP automatically creates `storage/innpulse.sqlite` and seeds demo accounts, 13 rooms, eight reservations, deposits, reviews, audit events, and settings on first use. No database server, Composer, npm install, or Supabase account is required to run the app.
 
-## Installation & Setup
+If PHP is unavailable in a different terminal, use `C:\xampp\php\php.exe` instead of `php`.
 
-### 1. Install Dependencies
+PHP must serve the pages: VS Code Live Server, Python static servers, and opening files directly will not execute PHP. Always include `router.php` when using PHP's development server; it blocks downloads of private application files and the database.
 
-```bash
-npm install
+## Demo accounts
+
+| Email | Password | Role |
+|---|---|---|
+| admin@innpulse.com | admin@innpulse | Admin |
+| staff@innpulse.com | staff@innpulse | Staff |
+
+Use the Login button on the home page. Admins can create accounts, change passwords, and lock/unlock accounts from User Management. Passwords are hashed in SQLite. PHP sessions determine access; browser local storage no longer grants permissions.
+
+## Classroom security modes
+
+Use synthetic data for the teacher-authorized exercises on this local copy.
+
+**Protected mode (default):** login uses a prepared SQL statement and password verification. Ten login attempts per IP within five minutes trigger an HTTP 429 response. Failed and successful logins appear in Audit Logs.
+
+**Lab mode:** stop the server with Ctrl+C, then run:
+
+```powershell
+$env:INNPULSE_LAB_MODE = "1"
+php -S 127.0.0.1:8000 router.php
 ```
 
-### 2. Build Tailwind CSS
+A red banner identifies lab mode. It intentionally concatenates login inputs into SQL and disables the login attempt limit. The flag takes effect only for requests from `127.0.0.1` or `::1`; keep the server bound to loopback as shown. Manual locks and roles still apply.
 
-```bash
+For a local SQL injection demonstration, enter `admin@innpulse.com' --` as the login email and any nonempty password. This bypasses the password condition in lab mode. The same input fails in protected mode. The login form permits this classroom input without browser email validation.
+
+For a brute-force demonstration, the lab login accepts repeated password guesses without an automatic lockout or rate limit. Use only the seeded local accounts. Compare failed-login audit events and HTTP responses with protected mode.
+
+To restore protected mode, stop the server, then run:
+
+```powershell
+$env:INNPULSE_LAB_MODE = "0"
+php -S 127.0.0.1:8000 router.php
+```
+
+These modes compare login weaknesses; the application has not undergone a full production security audit. The lab flag does not intentionally weaken every database operation.
+
+## Pages and backend
+
+| Route | Access |
+|---|---|
+| index.php, login.php | Public guest portal and login |
+| front-desk.php | Staff/admin reservation management |
+| admin.php | Admin account management |
+| audit-logs.php | Admin audit events |
+| system-config.php | Admin settings |
+| schema.php | Admin SQLite schema and SQL examples |
+
+`api.php` handles authentication, bookings, reviews, and authorized database operations. Requests use POST JSON with the header `X-InnPulse-Request: 1`. `js/api.js` provides the browser transport. `app/bootstrap.php` initializes SQLite and sessions. `database/schema.sql` and `database/seed.sql` contain the SQLite schema and demo fixtures.
+
+Guest reservations save the booking, pending deposit, room status, and audit event in one transaction. The interface reports success only after saving. Uploading a receipt, if added to the interface, would not count as payment verification. The existing contact form remains a demonstration and sends no email. Schema queries are examples, not a live SQL console. Hotel settings persist in SQLite; the existing interface does not enforce every configuration toggle.
+
+The supplied data is demo seed data, **not an export of your hosted Supabase database**. Existing live Supabase records have not been copied. Fonts and hotel images still use their existing external URLs.
+
+## Database location and reset
+
+Optionally set `INNPULSE_DB_PATH` to an absolute file path outside the web root before starting PHP. Environment variables must be set in the shell or server configuration: PHP does not automatically load `.env`.
+
+To reset the default demo database, stop PHP and remove only `storage/innpulse.sqlite`; restarting creates fresh demo data. Back up that file first if you want to keep your changes. Private directories include Apache `.htaccess` rules as well as development-router restrictions. With XAMPP Apache, ensure `AllowOverride` permits these rules before serving this project.
+
+## Verification and CSS
+
+```powershell
+python tests/smoke.py
 npm run build:css
 ```
 
-To watch for changes during development:
+The integration suite requires Python, PHP, and Node. It starts temporary loopback servers with disposable databases and checks both security modes, authorization, bookings, reviews, settings, account management, and PHP/JavaScript syntax. It leaves your application database unchanged.
 
-```bash
-npm run watch:css
-```
-
-### 3. Create a Supabase Project
-
-1. Go to [https://supabase.com](https://supabase.com) and create a new project.
-2. Note your **Project URL** and **Anon (public) key** from **Settings → API**.
-
-> Never use or expose the **service_role key** in frontend code.
-
-### 4. Execute Schema
-
-In the Supabase **SQL Editor**, paste and run the contents of `supabase/schema.sql`.
-
-This creates:
-- `profiles` — Staff/admin user records
-- `rooms` — Hotel room inventory
-- `reservations` — Guest reservations
-- `deposits` — Deposit tracking
-- `reviews` — Guest reviews
-- `audit_logs` — Security event log
-- `system_config` — Key-value configuration
-
-### 5. Execute Seed Data
-
-In the Supabase SQL Editor, paste and run `supabase/seed.sql`.
-
-This populates:
-- 13 hotel rooms (various types and statuses)
-- 8 sample reservations
-- Matching deposit records
-- 5 approved guest reviews
-- 10 demo audit log entries
-- System configuration defaults
-
-### 6. Create Supabase Storage Bucket
-
-1. Go to **Storage** in your Supabase dashboard.
-2. Create a new bucket named exactly: `deposit-receipts`
-3. Set it to **Public** (so receipt thumbnails are viewable in the front desk).
-
-### 7. Configure Environment Variables
-
-Copy `.env.example` to `.env` and fill in your values:
-
-```bash
-SUPABASE_URL=https://your-project-ref.supabase.co
-SUPABASE_ANON_KEY=your-anon-key-here
-```
-
-Then update **both values** in each HTML file's inline script block. Search for:
-
-```javascript
-const SUPABASE_URL  = 'https://your-project-ref.supabase.co';
-const SUPABASE_ANON = 'your-anon-key-here';
-```
-
-Replace these in: `index.html`, `login.html`, `front-desk.html`, `admin.html`, `audit-logs.html`, `system-config.html`, `schema.html`.
-
-> **Tip:** For a real project, use a bundler (Vite/Webpack) to inject environment variables. For this demo, inline replacement is fine since the anon key is public-safe.
-
-### 8. Create Demo Auth Users
-
-In your Supabase dashboard, go to **Authentication → Users → Add User**:
-
-| Email               | Password         | Note                    |
-|---------------------|------------------|-------------------------|
-| `admin@innpulse`    | `admin@innpulse` | Will become admin role  |
-| `staff@innpulse`    | `staff@innpulse` | Will become staff role  |
-
-> Passwords are set by you in the Supabase Auth dashboard — they are not hardcoded anywhere in the frontend HTML.
-
-### 9. Assign Profile Roles
-
-After creating the auth users, the trigger automatically creates profile records. Set the roles:
-
-```sql
-UPDATE public.profiles
-  SET role = 'admin', username = 'admin.root'
-  WHERE email = 'admin@innpulse';
-
-UPDATE public.profiles
-  SET role = 'staff', username = 'jane.staff'
-  WHERE email = 'staff@innpulse';
-```
-
-### 10. Start Local Development Server
-
-Since this is a plain HTML project (no build server required), serve it with any static file server:
-
-```bash
-# Using Node.js http-server
-npx http-server . -p 3000 -o
-
-# Or using Python
-python -m http.server 3000
-
-# Or using VS Code Live Server extension
-# Right-click index.html → Open with Live Server
-```
-
-Then open `http://localhost:3000` in your browser.
-
----
-
-## Application Routes
-
-| URL                | Access      | Description                       |
-|--------------------|-------------|-----------------------------------|
-| `/index.html`      | Public      | Guest portal, room search, reviews |
-| `/login.html`      | Public      | Unified staff/admin login          |
-| `/front-desk.html` | Staff/Admin | Reservation management dashboard   |
-| `/admin.html`      | Admin only  | User management                    |
-| `/audit-logs.html` | Admin only  | Security audit event stream        |
-| `/system-config.html` | Admin only | System configuration            |
-| `/schema.html`     | Admin only  | Database schema viewer             |
-
----
-
-## Demo Accounts
-
-| Email               | Password         | Role  | Redirects To           |
-|---------------------|------------------|-------|------------------------|
-| `admin@innpulse`    | `admin@innpulse` | Admin | `/admin.html`          |
-| `staff@innpulse`    | `staff@innpulse` | Staff | `/front-desk.html`     |
-
-Login is accessed via the **Login** button on the public landing page — it opens as a modal overlay, not a separate page. Guests **do not need an account** to browse rooms or make reservations.
-
----
-
-## Security Notes (For Demonstration)
-
-This application intentionally demonstrates a **basic, unsecured login** flow:
-
-- ❌ No MFA
-- ❌ No CAPTCHA
-- ❌ No rate limiting
-- ❌ No brute-force lockout (only manual admin lock)
-- ✅ Role-based redirect after login
-- ✅ Manual account lock/unlock in admin UI
-- ✅ Audit log records login events
-- ✅ RLS policies restrict database access by role
-- ✅ Anon key used (service_role key never in frontend)
-
----
-
-## Design System
-
-| Token          | Value     |
-|----------------|-----------|
-| Primary Charcoal | `#12161A` |
-| Dark Secondary | `#1C2228` |
-| Off-White      | `#F8F9FA` |
-| Luxury Gold    | `#D4AF37` |
-| Muted Gold     | `#B9982E` |
-| Muted Text     | `#8B9198` |
-
-Fonts: **Playfair Display** (headings) · **Inter** (body) · **JetBrains Mono** (technical labels)
-
----
-
-## License
-
-This project is provided for **educational and demonstration purposes only**.
-
-> ⚠ Do not use this application with real customer data, real payment information, or in a production environment without proper security hardening.
+Compiled CSS is included. npm and Tailwind are needed only to rebuild CSS; Tailwind now scans `.php` pages.

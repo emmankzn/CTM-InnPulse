@@ -1,3 +1,4 @@
+<?php require __DIR__ . '/app/bootstrap.php'; require_page(['admin']); ?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -568,12 +569,12 @@
         </div>
         <nav class="sidebar-nav">
             <p class="nav-section-label">Controls</p>
-            <a class="nav-item" href="admin.html"><span class="nav-icon">👥</span> User Management</a>
-            <a class="nav-item active" href="audit-logs.html"><span class="nav-icon">🔍</span> Security Audit</a>
-            <a class="nav-item" href="system-config.html"><span class="nav-icon">⚙</span> System Config</a>
-            <a class="nav-item" href="front-desk.html"><span class="nav-icon">🖥</span> Front Desk</a>
+            <a class="nav-item" href="admin.php"><span class="nav-icon">👥</span> User Management</a>
+            <a class="nav-item active" href="audit-logs.php"><span class="nav-icon">🔍</span> Security Audit</a>
+            <a class="nav-item" href="system-config.php"><span class="nav-icon">⚙</span> System Config</a>
+            <a class="nav-item" href="front-desk.php"><span class="nav-icon">🖥</span> Front Desk</a>
             <p class="nav-section-label">Database</p>
-            <a class="nav-item" href="schema.html"><span class="nav-icon">🗄</span> Schema Viewer</a>
+            <a class="nav-item" href="schema.php"><span class="nav-icon">🗄</span> Schema Viewer</a>
         </nav>
         <div class="sidebar-footer">
             <div class="sidebar-user">
@@ -645,31 +646,29 @@
     </div>
 
     <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-        const SUPABASE_URL = 'https://zkoygowrxpkycfnmkmjm.supabase.co';
-        const SUPABASE_ANON = 'sb_publishable_nDXU4D-y6IuCQRjc9JafqQ_IFWMs5Q-';
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+        import api from './js/api.js';
 
         let allLogs = [];
         let activeFilter = 'ALL';
         let currentUser = null, currentProfile = null;
 
         async function init() {
-            const stored = localStorage.getItem('innpulse_user');
-            if (!stored) { window.location.href = 'index.html?login=1'; return; }
+            const sessionProfile = await api.session();
+            const stored = sessionProfile ? JSON.stringify(sessionProfile) : null;
+            if (!stored) { window.location.href = 'index.php?login=1'; return; }
             const sessionUser = JSON.parse(stored);
-            if (sessionUser.role !== 'admin') { window.location.href = 'index.html?login=1'; return; }
-            currentUser = { id: sessionUser.email, email: sessionUser.email };
+            if (sessionUser.role !== 'admin') { window.location.href = 'index.php?login=1'; return; }
+            currentUser = { id: sessionUser.id, email: sessionUser.email };
             currentProfile = sessionUser;
             document.getElementById('sidebar-username').textContent = sessionUser.username || sessionUser.email;
             await loadLogs();
         }
 
         window.loadLogs = async function () {
-            const { data, error } = await supabase
+            const { data, error } = await api
                 .from('audit_logs').select('*')
                 .order('occurred_at', { ascending: false }).limit(200);
-            allLogs = (error || !data) ? getFallbackLogs() : data;
+            allLogs = data || []; if (error) console.error(error.message);
             updateStats();
             renderLogs(allLogs);
         };
@@ -783,9 +782,9 @@ ${log.metadata ? `Metadata: ${JSON.stringify(log.metadata, null, 2)}` : ''}</div
             ];
         }
 
-        window.signOut = function () {
-            localStorage.removeItem('innpulse_user');
-            window.location.href = 'index.html?login=1';
+        window.signOut = async function () {
+            await api.logout();
+            window.location.href = 'index.php?login=1';
         };
         window.toggleSidebar = function () {
             document.getElementById('sidebar').classList.toggle('open');

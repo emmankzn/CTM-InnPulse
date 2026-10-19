@@ -164,10 +164,10 @@ export function confirm(message, title = 'Confirm Action') {
 }
 
 // ─── Audit Log Helper ─────────────────────────────────────────────────────────
-export async function logAuditEvent(supabase, { event, severity = 'INFO', username = null, metadata = {} }) {
+export async function logAuditEvent(api, { event, severity = 'INFO', username = null, metadata = {} }) {
     try {
-        const { data: { user } } = await supabase.auth.getUser();
-        await supabase.from('audit_logs').insert({
+        const user = await api.session();
+        await api.from('audit_logs').insert({
             user_id: user?.id || null,
             username: username || user?.email || 'system',
             ip_address: '127.0.0.1',
