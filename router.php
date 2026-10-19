@@ -1,7 +1,7 @@
 <?php
 // Router for the PHP development server. Apache uses the included .htaccess files.
 $path = rawurldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/');
-if (str_contains($path, '..') || preg_match('~^/(?:app|database|storage|tests|deployment|node_modules|supabase|\.)~i', $path)
+if (str_contains($path, '..') || preg_match('~^/(?:app|database|storage|tests|tools|PHPMailer|deployment|node_modules|supabase|\.)~i', $path)
     || preg_match('~\.(?:sqlite|sql|env|log|py)$~i', $path)) {
     http_response_code(404); exit('Not found');
 }

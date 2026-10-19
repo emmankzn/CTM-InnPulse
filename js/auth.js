@@ -1,3 +1,4 @@
+import { escapeHTML } from './security.js';
 /**
  * InnPulse — Authentication & Session Helpers
  */
@@ -55,7 +56,7 @@ function showAccessDenied(msg = 'Access Denied') {
     banner.innerHTML = `
     <div style="font-size:48px;margin-bottom:16px">⛔</div>
     <h2 style="font-family:\'Playfair Display\',serif;font-size:28px;margin-bottom:8px">Access Denied</h2>
-    <p style="color:#8B9198;font-size:15px">${msg}</p>
+    <p style="color:#8B9198;font-size:15px">${escapeHTML(msg)}</p>
     <p style="color:#D4AF37;font-size:13px;margin-top:12px">Redirecting…</p>`;
     document.body.appendChild(banner);
 }

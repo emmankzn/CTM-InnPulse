@@ -3,20 +3,21 @@ declare(strict_types=1);
 require __DIR__ . '/app/bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
 
-function respond($data = null, ?string $error = null, int $status = 200): never {
+function respond($data = null, ?string $error = null, int $status = 200, array $details = []): never {
     http_response_code($status);
-    echo json_encode(['data' => $data, 'error' => $error ? ['message' => $error] : null]);
+    echo json_encode(['data' => $data, 'error' => $error ? array_merge(['message' => $error], $details) : null, 'csrf' => csrf_token()]);
     exit;
 }
-function fail(string $message, int $status = 400): never { respond(null, $message, $status); }
+function fail(string $message, int $status = 400, array $details = []): never { respond(null, $message, $status, $details); }
 function normalize(array $row): array {
-    unset($row['password_hash']);
+    unset($row['password_hash'], $row['session_version'], $row['must_change_password']);
     foreach (['active', 'locked', 'approved', 'is_featured'] as $key) if (isset($row[$key])) $row[$key] = (bool)$row[$key];
     foreach (['amenities', 'metadata', 'config_value'] as $key) if (isset($row[$key])) $row[$key] = json_decode($row[$key], true);
     return $row;
 }
 function valid_booking(array $v): void {
     foreach (['guest_name', 'guest_email', 'room_id', 'check_in', 'check_out'] as $key) if (empty($v[$key])) fail('Missing reservation field: ' . $key);
+    foreach (['guest_name','guest_phone','special_requests'] as $field) if (isset($v[$field]) && (!is_string($v[$field]) || strlen($v[$field]) > 2000 || preg_match('/[<>\x00-\x08\x0b\x0c\x0e-\x1f]/', $v[$field]))) fail('Reservation fields must be plain text, without HTML markup.');
     if (!filter_var($v['guest_email'], FILTER_VALIDATE_EMAIL)) fail('Enter a valid guest email.');
     foreach (['check_in', 'check_out'] as $key) {
         $d = DateTimeImmutable::createFromFormat('!Y-m-d', $v[$key]);
@@ -33,41 +34,20 @@ try {
     // A custom request header and JSON prevent cross-origin form submissions.
     if (($_SERVER['HTTP_X_INNPULSE_REQUEST'] ?? '') !== '1' || !str_starts_with($_SERVER['CONTENT_TYPE'] ?? '', 'application/json')) fail('Invalid request.', 403);
     if ((int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 3000000) fail('Request is too large.', 413);
-    $input = json_decode(file_get_contents('php://input'), true, 32, JSON_THROW_ON_ERROR);
+    $raw = file_get_contents('php://input', false, null, 0, 3000001);
+    if (strlen($raw) > 3000000) fail('Request is too large.', 413);
+    $input = json_decode($raw, true, 32, JSON_THROW_ON_ERROR);
     if (!is_array($input)) fail('Invalid JSON.');
     $pdo = db();
     $action = $input['action'] ?? '';
+    request_security($action);
+    require __DIR__ . '/app/auth-actions.php';
     if ($action === 'session') respond(current_profile());
     if ($action === 'logout') {
-        audit('Logout'); $_SESSION = []; session_destroy(); respond(true);
-    }
-    if ($action === 'login') {
-        $email = strtolower(trim((string)($input['email'] ?? '')));
-        $password = (string)($input['password'] ?? '');
-        if (!$email || !$password || strlen($email) > 255 || strlen($password) > 1024) fail('Enter an email and password.');
-        if (!lab_mode()) {
-            $s = $pdo->prepare("SELECT COUNT(*) FROM login_attempts WHERE ip_address = ? AND occurred_at >= datetime('now', '-5 minutes')");
-            $s->execute([$_SERVER['REMOTE_ADDR']]);
-            if ($s->fetchColumn() >= 10) fail('Too many attempts. Try again in five minutes.', 429);
-        }
-        $s = $pdo->prepare('INSERT INTO login_attempts (ip_address) VALUES (?)'); $s->execute([$_SERVER['REMOTE_ADDR']]);
-        if (lab_mode()) {
-            // INTENTIONAL CLASSROOM VULNERABILITY: enabled only by an environment flag on loopback.
-            // SQL concatenation allows the email expression to bypass the password condition.
-            $pdo->sqliteCreateFunction('verify_password', fn($plain, $hash) => password_verify($plain, $hash) ? 1 : 0, 2);
-            try { $user = $pdo->query("SELECT * FROM profiles WHERE email = '$email' AND verify_password('$password', password_hash) = 1")->fetch(); }
-            catch (PDOException $e) { audit('Failed login: invalid lab SQL', 'WARN', $email); fail('Invalid email or password.', 401); }
-        } else {
-            $s = $pdo->prepare('SELECT * FROM profiles WHERE email = ?'); $s->execute([$email]); $user = $s->fetch();
-            if ($user && !password_verify($password, $user['password_hash'])) $user = false;
-        }
-        if (!$user || !$user['active'] || $user['locked']) { audit('Failed login attempt', 'WARN', $email); fail('Invalid email or password, or account unavailable.', 401); }
-        session_regenerate_id(true); $_SESSION['user_id'] = $user['id'];
-        $s = $pdo->prepare("UPDATE profiles SET last_login = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?"); $s->execute([$user['id']]);
-        audit('Login success' . (lab_mode() ? ' (lab mode)' : ''));
-        respond(current_profile());
+        audit('Logout'); $_SESSION = ['csrf' => bin2hex(random_bytes(32))]; session_regenerate_id(true); respond(true);
     }
     if ($action === 'book') {
+        limited('public-booking', 8, 600);
         $v = $input['reservation'] ?? []; valid_booking($v);
         // Serialize availability check and all writes in a single transaction.
         $pdo->exec('BEGIN IMMEDIATE');
@@ -93,25 +73,53 @@ try {
     $tables = ['profiles', 'rooms', 'reservations', 'deposits', 'reviews', 'audit_logs', 'system_config'];
     if (!in_array($table, $tables, true) || !in_array($op, ['select', 'insert', 'update', 'delete', 'upsert'], true)) fail('Unsupported query.');
     $public = !$user;
-    if ($public && !(($table === 'rooms' || $table === 'reviews') && $op === 'select') && !($table === 'reviews' && $op === 'insert')) fail('Sign in required.', 401);
-    if ($user && $user['role'] !== 'admin' && in_array($table, ['profiles', 'system_config'], true)) fail('Admin access required.', 403);
-    if ($table === 'audit_logs' && (($op === 'select' || $op === 'delete') && ($user['role'] ?? '') !== 'admin')) fail('Admin access required.', 403);
+    $role = $user['role'] ?? 'guest';
+    $policy = [
+        'guest' => ['rooms' => ['select'], 'reviews' => ['select', 'insert']],
+        'staff' => ['rooms' => ['select', 'update'], 'reservations' => ['select', 'insert', 'update', 'delete'],
+            'deposits' => ['select', 'insert', 'update', 'delete'], 'reviews' => ['select', 'insert'], 'audit_logs' => ['insert']],
+        'admin' => ['profiles' => ['select', 'insert', 'update', 'delete'], 'rooms' => ['select', 'update'],
+            'reservations' => ['select', 'insert', 'update', 'delete'], 'deposits' => ['select', 'insert', 'update', 'delete'],
+            'reviews' => ['select', 'insert', 'update', 'delete'], 'audit_logs' => ['select', 'insert'], 'system_config' => ['select', 'upsert']],
+    ];
+    if (!in_array($op, $policy[$role][$table] ?? [], true)) { audit('Authorization denied: ' . $table . '/' . $op, 'WARN'); fail('Access denied.', $public ? 401 : 403); }
+    if ($op !== 'select') limited('database-writes', 120, 60);
+    if ($table === 'profiles' && $op !== 'select') {
+        $verified = consume_challenge((string)($input['change_id'] ?? ''), (string)($input['change_code'] ?? ''), 'account-change', mutation_digest($input) . ':' . $_SESSION['session_version']);
+        if ($verified['id'] !== $user['id'] || $verified['role'] !== 'admin' || (int)$verified['session_version'] !== $_SESSION['session_version']) fail('Account change authorization denied.', 403);
+    }
+    if ($table === 'reviews' && $op === 'insert') limited('reviews', 8, 600);
     $columns = array_column($pdo->query('PRAGMA table_info(' . $table . ')')->fetchAll(), 'name');
-    $checkColumn = function ($c) use ($columns) { if (!in_array($c, $columns, true) || $c === 'password_hash') fail('Unsupported column.'); return '"' . $c . '"'; };
+    // Values are bound separately. SQL identifiers/operators cannot be bound, so
+    // accept only schema identifiers and the fixed operators below, never SQL fragments.
+    $checkColumn = function ($c) use ($columns) { if (!is_string($c) || !in_array($c, $columns, true) || $c === 'password_hash') fail('Unsupported column.'); return '"' . $c . '"'; };
+    $filters = $input['filters'] ?? [];
+    if (!is_array($filters) || !array_is_list($filters) || count($filters) > 50) fail('Invalid filters.');
     $where = []; $params = [];
-    foreach ($input['filters'] ?? [] as [$column, $operator, $value]) {
+    foreach ($filters as $filter) {
+        if (!is_array($filter) || !array_is_list($filter) || count($filter) !== 3) fail('Invalid filter.');
+        [$column, $operator, $value] = $filter;
         $col = $checkColumn($column);
-        if ($operator === 'IN' && is_array($value) && count($value) > 0 && count($value) <= 100) {
+        if ($operator === 'IN' && is_array($value) && array_is_list($value) && count($value) > 0 && count($value) <= 100) {
+            foreach ($value as &$item) {
+                if (!is_scalar($item) && $item !== null) fail('Invalid filter value.');
+                if (is_bool($item)) $item = (int)$item;
+            } unset($item);
             $where[] = $col . ' IN (' . implode(',', array_fill(0, count($value), '?')) . ')'; array_push($params, ...$value);
         } elseif (in_array($operator, ['=', '!='], true) && !is_array($value)) {
             $where[] = $col . ' ' . $operator . ' ?'; $params[] = is_bool($value) ? (int)$value : $value;
         } else fail('Unsupported filter.');
     }
-    if ($public && $table === 'reviews' && $op === 'select') $where[] = 'approved = 1';
+    if ($role !== 'admin' && $table === 'reviews' && $op === 'select') $where[] = 'approved = 1';
     $whereSql = $where ? ' WHERE ' . implode(' AND ', $where) : '';
     if ($op === 'select') {
         $sql = 'SELECT * FROM ' . $table . $whereSql;
-        if (isset($input['order'])) $sql .= ' ORDER BY ' . $checkColumn($input['order'][0]) . ($input['order'][1] ? ' ASC' : ' DESC');
+        if (isset($input['order'])) {
+            $order = $input['order'];
+            if (!is_array($order) || !array_is_list($order) || count($order) !== 2 || !is_bool($order[1])) fail('Invalid sort order.');
+            $sql .= ' ORDER BY ' . $checkColumn($order[0]) . ($order[1] ? ' ASC' : ' DESC');
+        }
+        if (isset($input['limit']) && !is_int($input['limit'])) fail('Limit must be an integer.');
         $sql .= ' LIMIT ' . max(1, min(1000, (int)($input['limit'] ?? 1000)));
         $s = $pdo->prepare($sql); $s->execute($params); $rows = array_map('normalize', $s->fetchAll());
         if ($table === 'reservations' && str_contains($input['columns'] ?? '', 'rooms(')) {
@@ -128,26 +136,45 @@ try {
         if (in_array($user['id'], $s->fetchAll(PDO::FETCH_COLUMN), true)) fail('Use another admin to change or remove your own account.');
     }
     if ($op === 'delete') {
-        $s = $pdo->prepare('DELETE FROM ' . $table . $whereSql); $s->execute($params); respond(true);
+        $s = $pdo->prepare('DELETE FROM ' . $table . $whereSql); $s->execute($params); audit('Deleted from ' . $table, 'WARN'); respond(true);
     }
     $v = $input['values'] ?? [];
     if (!is_array($v) || !$v || array_is_list($v)) fail('An object is required.');
+    $allowedFields = [
+        'profiles' => ['username', 'email', 'role', 'active', 'locked', 'password'],
+        'rooms' => ['status'],
+        'reservations' => ['guest_id', 'guest_name', 'guest_email', 'guest_phone', 'room_id', 'check_in', 'check_out', 'guest_count', 'special_requests', 'status', 'booking_ref', 'updated_at'],
+        'deposits' => ['reservation_id', 'amount', 'status', 'receipt_url', 'paid_at'],
+        'reviews' => ['guest_name', 'rating', 'review_text', 'approved'],
+        'audit_logs' => ['user_id', 'username', 'ip_address', 'event', 'severity', 'session_reference', 'metadata'],
+        'system_config' => ['config_key', 'config_value', 'updated_at'],
+    ];
+    if (array_diff(array_keys($v), $allowedFields[$table])) fail('Field is not writable.', 403);
+    foreach ($v as $field => $value) {
+        if (is_string($value) && strlen($value) > ($field === 'receipt_url' ? 2800000 : 5000)) fail('Field is too long.');
+        if (is_string($value) && in_array($field, ['guest_name', 'guest_phone', 'special_requests', 'username', 'review_text'], true)
+            && preg_match('/[<>\x00-\x08\x0b\x0c\x0e-\x1f]/', $value)) fail('Use plain text without HTML markup.');
+    }
+    if ($table === 'profiles' && isset($v['role']) && !in_array($v['role'], ['admin','staff'], true)) fail('Invalid role.');
+    if ($table === 'deposits' && !empty($v['receipt_url']) && !preg_match('~^data:image/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$~', $v['receipt_url'])) fail('Invalid receipt.');
+    if ($table === 'reviews' && (empty($v['guest_name']) || empty($v['review_text']) || !isset($v['rating']) || !is_int($v['rating']) || $v['rating'] < 1 || $v['rating'] > 5)) fail('Invalid review.');
     if ($table === 'reservations') valid_booking($v);
     if ($table === 'profiles') {
+        if ($op === 'insert') $v['must_change_password'] = 0;
         if (isset($v['email']) && !filter_var($v['email'], FILTER_VALIDATE_EMAIL)) fail('Enter a valid email.');
         if (isset($v['email'])) $v['email'] = strtolower(trim($v['email']));
         if ($op === 'insert' && empty($v['password'])) fail('Password is required.');
         if (isset($v['password'])) {
-            if (strlen($v['password']) < 6) fail('Password must be at least 6 characters.');
+            password_policy((string)$v['password'], $v['email'] ?? '', $v['username'] ?? '');
             $v['password_hash'] = password_hash($v['password'], PASSWORD_DEFAULT); unset($v['password']);
         }
     }
-    if ($public && $table === 'reviews') $v = ['guest_name' => $v['guest_name'] ?? '', 'rating' => $v['rating'] ?? 0, 'review_text' => $v['review_text'] ?? '', 'approved' => false];
+    if ($role !== 'admin' && $table === 'reviews') $v = ['guest_name' => $v['guest_name'] ?? '', 'rating' => $v['rating'] ?? 0, 'review_text' => $v['review_text'] ?? '', 'approved' => false];
     if ($table === 'audit_logs') {
         $v['user_id'] = $user['id']; $v['username'] = $user['username']; $v['ip_address'] = $_SERVER['REMOTE_ADDR'];
     }
     foreach ($v as $key => &$value) {
-        if ($key === 'password_hash' && $table === 'profiles') continue;
+        if (in_array($key, ['password_hash', 'must_change_password'], true) && $table === 'profiles') continue;
         $checkColumn($key);
         if (in_array($key, ['amenities', 'metadata', 'config_value'], true)) $value = json_encode($value);
         elseif (is_bool($value)) $value = (int)$value;
@@ -156,7 +183,9 @@ try {
     if ($op === 'update') {
         unset($v['id']);
         $set = implode(', ', array_map(fn($key) => '"' . $key . '" = ?', array_keys($v)));
-        $s = $pdo->prepare('UPDATE ' . $table . ' SET ' . $set . $whereSql); $s->execute([...array_values($v), ...$params]); respond(true);
+        $s = $pdo->prepare('UPDATE ' . $table . ' SET ' . $set . $whereSql); $s->execute([...array_values($v), ...$params]);
+        if ($table === 'profiles') { $s = $pdo->prepare('UPDATE profiles SET session_version=session_version+1' . $whereSql); $s->execute($params); }
+        audit('Updated ' . $table, 'INFO'); respond(true);
     }
     if ($op === 'upsert' && $table !== 'system_config') fail('Upsert only supports configuration.');
     $v['id'] = bin2hex(random_bytes(16));
@@ -164,7 +193,9 @@ try {
     if ($op === 'upsert') $sql .= ' ON CONFLICT(config_key) DO UPDATE SET config_value = excluded.config_value, updated_at = excluded.updated_at';
     $s = $pdo->prepare($sql); $s->execute(array_values($v));
     $s = $pdo->prepare('SELECT * FROM ' . $table . ' WHERE id = ?'); $s->execute([$v['id']]); $row = $s->fetch();
+    if ($table !== 'audit_logs') audit('Created or saved ' . $table);
     respond($row ? normalize($row) : true);
 } catch (JsonException $e) { fail('Invalid JSON.'); }
+catch (SecurityServiceException $e) { audit('Verification provider unavailable', 'WARN'); fail($e->getMessage(), 503); }
 catch (RuntimeException $e) { fail($e instanceof PDOException ? 'Database operation failed. Check required fields and duplicate values.' : $e->getMessage()); }
 catch (Throwable $e) { error_log((string)$e); fail('Server error. Check PHP SQLite support and storage permissions.', 500); }

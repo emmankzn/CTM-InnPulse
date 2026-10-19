@@ -1,0 +1,3 @@
+PHPMailer 7.1.1
+Source: https://github.com/PHPMailer/PHPMailer/tree/v7.1.1
+Only the SMTP runtime classes and upstream license are included.

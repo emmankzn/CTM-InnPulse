@@ -1,3 +1,4 @@
+import { escapeHTML } from './security.js';
 /**
  * InnPulse — Shared Utilities
  */
@@ -20,7 +21,7 @@ export function showToast(message, type = 'info', duration = 3500) {
     const container = getToastContainer();
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    toast.innerHTML = `<span style="font-size:16px">${icons[type] || 'ℹ'}</span><span>${message}</span>`;
+    toast.innerHTML = `<span style="font-size:16px">${icons[type] || 'ℹ'}</span><span>${escapeHTML(message)}</span>`;
     container.appendChild(toast);
     setTimeout(() => {
         toast.classList.add('toast-leaving');
@@ -109,7 +110,7 @@ export function depositBadge(status) {
         pending: '<span class="badge-pending px-2 py-0.5 rounded-full text-xs font-semibold">Pending</span>',
         refunded: '<span class="badge-refunded px-2 py-0.5 rounded-full text-xs font-semibold">Refunded</span>',
     };
-    return map[status] || `<span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">${status}</span>`;
+    return map[status] || `<span class="px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs">${escapeHTML(status)}</span>`;
 }
 
 export function roomStatusBadge(status) {
@@ -120,7 +121,7 @@ export function roomStatusBadge(status) {
         maintenance: 'badge-maintenance',
     };
     const cls = map[status] || 'bg-gray-100 text-gray-600';
-    return `<span class="${cls} px-2 py-0.5 rounded-full text-xs font-semibold capitalize">${status}</span>`;
+    return `<span class="${cls} px-2 py-0.5 rounded-full text-xs font-semibold capitalize">${escapeHTML(status)}</span>`;
 }
 
 export function roleBadge(role) {
@@ -129,7 +130,7 @@ export function roleBadge(role) {
         staff: 'bg-blue-100 text-blue-800',
     };
     const cls = map[role] || 'bg-gray-100 text-gray-600';
-    return `<span class="${cls} px-2 py-0.5 rounded-full text-xs font-semibold capitalize">${role}</span>`;
+    return `<span class="${cls} px-2 py-0.5 rounded-full text-xs font-semibold capitalize">${escapeHTML(role)}</span>`;
 }
 
 export function severityBadge(severity) {
@@ -139,7 +140,7 @@ export function severityBadge(severity) {
         CRITICAL: 'bg-red-100 text-red-800',
     };
     const cls = map[severity] || 'bg-gray-100 text-gray-600';
-    return `<span class="${cls} px-2 py-0.5 rounded-full text-xs font-bold">${severity}</span>`;
+    return `<span class="${cls} px-2 py-0.5 rounded-full text-xs font-bold">${escapeHTML(severity)}</span>`;
 }
 
 // ─── Confirmation Modal ───────────────────────────────────────────────────────
@@ -149,8 +150,8 @@ export function confirm(message, title = 'Confirm Action') {
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
       <div class="modal-box max-w-sm p-6" style="max-width:420px">
-        <h3 class="text-lg font-semibold mb-2" style="font-family:'Playfair Display',serif">${title}</h3>
-        <p class="text-sm text-gray-600 mb-6">${message}</p>
+        <h3 class="text-lg font-semibold mb-2" style="font-family:'Playfair Display',serif">${escapeHTML(title)}</h3>
+        <p class="text-sm text-gray-600 mb-6">${escapeHTML(message)}</p>
         <div class="flex gap-3 justify-end">
           <button id="conf-cancel" class="btn-outline text-sm py-2 px-4">Cancel</button>
           <button id="conf-ok" class="btn-danger">Confirm</button>

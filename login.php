@@ -7,13 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>InnPulse — Sign In</title>
     <!-- Login is now a modal on the main page. Redirect there. -->
-    <script>
-        // If someone lands directly on login.php (e.g. old bookmark, back-button),
-        // send them to index.php and auto-open the login modal.
-        window.location.replace('index.php?login=1');
-    </script>
+    <script defer src="js/login-page-0.js?v=security5"></script>
 </head>
 
-<body></body>
+<body><script type="module" src="js/events.js?v=security5"></script>
+</body>
 
 </html>

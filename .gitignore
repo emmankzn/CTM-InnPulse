@@ -3,3 +3,6 @@ storage/*
 !storage/.htaccess
 .env
 deployment/
+
+app/config.local.php
+__pycache__/

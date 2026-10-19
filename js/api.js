@@ -1,12 +1,32 @@
-/** Local PHP/SQLite transport. Query builder preserves the existing page rendering. */
+import { secureDialog } from './security.js';
+let csrf = '';
+async function send(payload) {
+    const response = await fetch('api.php', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-InnPulse-Request': '1', 'X-CSRF-Token': csrf },
+        body: JSON.stringify(payload),
+    });
+    const result = await response.json();
+    if (result.error && !result.error.retry_after) result.error.retry_after = Number(response.headers.get('Retry-After') || 0);
+    if (result.csrf) csrf = result.csrf;
+    return result;
+}
+/** Same-origin transport with CSRF and per-operation account-change approval. */
 export async function request(payload) {
     try {
-        const response = await fetch('api.php', {
-            method: 'POST', credentials: 'same-origin',
-            headers: { 'Content-Type': 'application/json', 'X-InnPulse-Request': '1' },
-            body: JSON.stringify(payload),
-        });
-        return await response.json();
+        if (!csrf) await send({ action: 'csrf' });
+        if (payload.action === 'query' && payload.table === 'profiles' && payload.operation !== 'select' && !payload.change_id) {
+            const approval = await secureDialog({ title: 'Approve account change',
+                description: 'Confirm your current admin password. We will send a code to your registered email for this exact change.',
+                fields: [{ name: 'password', label: 'Your admin password', type: 'password', autocomplete: 'current-password' }],
+                onSubmit: values => send({ action: 'authorize_account_change', password: values.password, mutation: payload }) });
+            if (!approval) return { data: null, error: { message: 'Account change cancelled.' } };
+            const result = await secureDialog({ title: 'Verify account change', description: 'Enter the six-digit email code. It expires in five minutes.',
+                fields: [{ name: 'code', label: 'Email code', numeric: true, maxLength: 6, autocomplete: 'one-time-code' }],
+                onSubmit: values => send({ ...payload, change_id: approval.data.challenge_id, change_code: values.code }) });
+            return result || { data: null, error: { message: 'Account change cancelled.' } };
+        }
+        return await send(payload);
     } catch (error) { return { data: null, error: { message: 'Cannot reach the PHP server.' } }; }
 }
 class Query {
@@ -28,7 +48,7 @@ class Query {
 const api = {
     from: table => new Query(table),
     session: async () => (await request({ action: 'session' })).data,
-    login: (email, password) => request({ action: 'login', email, password }),
+    login: (email, password, captcha_token = '') => request({ action: 'login', email, password, captcha_token }),
     logout: () => request({ action: 'logout' }),
 };
 export default api;
